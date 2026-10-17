@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <!-- Bootstrap 5.3 CSS via WebJar -->
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}">
+    <!-- Bootstrap Icons via WebJar -->
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/font/bootstrap-icons.css}">
+</head>
+<body>
+<div class="container py-5">
+    <h1>Erfolgreich eingeloggt!</h1>
+    <p>Willkommen, <b th:text="${username}"></b></p>
+
+    <a th:href="@{/admin/create-user}">User anlegen</a><br /><br/>
+
+    <form th:action="@{/logout}" method="post">
+        <button type="submit">Logout</button>
+    </form>
+</div>
+<!-- Bootstrap 5.3 Bundle JS via WebJar -->
+<script th:src="@{/webjars/bootstrap/js/bootstrap.bundle.min.js}" defer></script>
+
+</body>
+</html>

@@ -1,0 +1,148 @@
+package de.sgs.heirs.service;
+
+
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
+import org.apache.pdfbox.pdmodel.graphics.image.LosslessFactory;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
+import org.springframework.stereotype.Service;
+
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+
+@Service
+public class Din5008PdfService {
+
+    private static final String OUTPUT_DIR = "generated-letters";
+
+    // 1 mm entspricht ca. 2.83465 Punkten in PDFBox (72 DPI)
+    private static final float MM_TO_PT = 2.83465f;
+
+    public File createLetterPdf(String username, LocalDate validUntil, BufferedImage qrImage) throws IOException {
+        // 1. Dateinamen bereinigen: Nur Buchstaben und Unterstrich erlauben
+        String safeFilename = sanitizeFilename(username) + ".pdf";
+
+        // Ausgabe-Ordner anlegen
+        Path dirPath = Paths.get(OUTPUT_DIR);
+        if (!Files.exists(dirPath)) {
+            Files.createDirectories(dirPath);
+        }
+        File targetFile = dirPath.resolve(safeFilename).toFile();
+
+        DateTimeFormatter germanDate = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+
+        // 2. PDF Dokument erstellen (DIN A4: 595.28 x 841.89 pt)
+        try (PDDocument document = new PDDocument()) {
+            PDPage page = new PDPage(PDRectangle.A4);
+            document.addPage(page);
+
+            PDType1Font fontRegular = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
+            PDType1Font fontBold = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
+
+            try (PDPageContentStream cs = new PDPageContentStream(document, page)) {
+                float pageHeight = page.getMediaBox().getHeight(); // 841.89 pt
+                float leftMargin = 25 * MM_TO_PT;                 // DIN 5008: 25mm linker Rand
+
+                // --- 1. RÜCKSENDEANGABE (45 mm von oben, 7 pt klein) ---
+                cs.beginText();
+                cs.setFont(fontRegular, 7);
+                cs.newLineAtOffset(leftMargin, pageHeight - (45 * MM_TO_PT));
+                cs.showText("Musterfirma GmbH • Hauptstraße 1 • 10115 Berlin");
+                cs.endText();
+
+                // --- 2. EMPFÄNGERFELD (50 mm von oben) ---
+                cs.beginText();
+                cs.setFont(fontRegular, 10);
+                cs.setLeading(14);
+                cs.newLineAtOffset(leftMargin, pageHeight - (55 * MM_TO_PT));
+                cs.showText("Herrn/Frau");
+                cs.newLine();
+                cs.showText(username);
+                cs.newLine();
+                cs.showText("Musterabteilung");
+                cs.newLine();
+                cs.showText("Musterstraße 42");
+                cs.newLine();
+                cs.showText("12345 Musterstadt");
+                cs.endText();
+
+                // --- 3. DATUM (ca. 85 mm von oben, rechtsbündig bei 170 mm) ---
+                String today = LocalDate.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
+                cs.beginText();
+                cs.setFont(fontRegular, 10);
+                cs.newLineAtOffset(145 * MM_TO_PT, pageHeight - (85 * MM_TO_PT));
+                cs.showText("Berlin, den " + today);
+                cs.endText();
+
+                // --- 4. BETREFF (ab 103,5 mm von oben, Fettdruck) ---
+                cs.beginText();
+                cs.setFont(fontBold, 12);
+                cs.newLineAtOffset(leftMargin, pageHeight - (103.5f * MM_TO_PT));
+//                cs.showText("Deine persönlichen Zugangsdaten (Ed25519 QR-Code)");
+                cs.showText("Dein digitaler Zugangsausweis ");
+                cs.endText();
+
+                // --- 5. BRIEFTEXT (2 Zeilen unter Betreff) ---
+                cs.beginText();
+                cs.setFont(fontRegular, 10);
+                cs.setLeading(15);
+                cs.newLineAtOffset(leftMargin, pageHeight - (120 * MM_TO_PT));
+                cs.showText("Guten Tag " + username + ",");
+                cs.newLine();
+                cs.newLine();
+                cs.showText("anbei erhältst du deinen persönlichen Zugangsausweis.");
+                cs.newLine();
+                cs.showText("Der unten stehende QR-Code ist kryptografisch signiert und gültig bis: " + validUntil.format(germanDate));
+                cs.newLine();
+                cs.newLine();
+                cs.showText("Scanne diesen Code einfach mit deiner Smartphone-Kamera, um dich direkt anzumelden.");
+                cs.newLine();
+                cs.newLine();
+                cs.showText("Bitte bewahre diesen Brief vertraulich auf!");
+                cs.endText();
+
+                // QR-Code einfügen
+                PDImageXObject pdQrImage = LosslessFactory.createFromImage(document, qrImage);
+                float qrSizePt = 50 * MM_TO_PT;
+                float qrY = pageHeight - (215 * MM_TO_PT);
+                cs.drawImage(pdQrImage, leftMargin, qrY, qrSizePt, qrSizePt);
+
+                // --- 7. GRUSSFORMEL ---
+                cs.beginText();
+                cs.setFont(fontRegular, 10);
+                cs.setLeading(14);
+                cs.newLineAtOffset(leftMargin, qrY - (20 * MM_TO_PT));
+                cs.showText("Mit freundlichen Grüßen");
+                cs.newLine();
+                cs.newLine();
+                cs.setFont(fontBold, 10);
+                cs.showText("Die Administration");
+                cs.endText();
+            }
+
+            document.save(targetFile);
+        }
+
+        return targetFile;
+    }
+
+    /**
+     * Lässt im Dateinamen AUSSCHLIESSLICH Buchstaben (A-Z, a-z) und Unterstriche (_) zu.
+     */
+    public String sanitizeFilename(String rawUsername) {
+        if (rawUsername == null) return "unbekannt";
+        // Entfernt alles, was kein Buchstabe und kein Unterstrich ist
+        String cleaned = rawUsername.replaceAll("[^a-zA-Z_]", "");
+        return cleaned.isBlank() ? "benutzer" : cleaned;
+    }
+}

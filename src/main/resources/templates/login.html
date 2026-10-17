@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anmeldung - QR-Code & Admin</title>
+
+    <!-- Bootstrap 5.3 CSS via WebJar -->
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}">
+    <!-- Bootstrap Icons via WebJar -->
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/font/bootstrap-icons.css}">
+
+    <!-- HTML5 QR-Code Scanner -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+<body>
+
+<div class="container py-5">
+    <div class="row justify-content-center g-4">
+
+        <div class="col-12 col-lg-5">
+            Es ist kein Login möglich!
+        </div>
+
+    </div>
+</div>
+
+<!-- Bootstrap 5.3 Bundle JS via WebJar -->
+<script th:src="@{/webjars/bootstrap/js/bootstrap.bundle.min.js}" defer></script>
+
+<!-- QR-Scanner Logik -->
+<script>
+    const html5QrCode = new Html5Qrcode("reader");
+    const errorBox = document.getElementById("jsError");
+    const errorText = document.getElementById("jsErrorText");
+    const startBtn = document.getElementById("startCamBtn");
+    const readerDiv = document.getElementById("reader");
+
+    function showError(msg) {
+        errorText.innerText = msg;
+        errorBox.style.display = "flex";
+    }
+
+    function onScanSuccess(decodedText) {
+        html5QrCode.stop().then(() => {
+            if (decodedText.startsWith("http://") || decodedText.startsWith("https://")) {
+                window.location.href = decodedText;
+            } else {
+                showError("Gescannter QR-Code enthält keinen gültigen Ausweis-Link.");
+            }
+        });
+    }
+
+    startBtn.addEventListener("click", () => {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            showError("Browser blockiert Kamera: HTTPS oder Localhost erforderlich!");
+            return;
+        }
+
+        startBtn.style.display = "none";
+        readerDiv.style.display = "block";
+
+        const config = { fps: 15, qrbox: { width: 250, height: 250 } };
+
+        // Bevorzuge Smartphone-Rückkamera
+        html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
+            .catch(() => {
+                // Fallback für Laptops / Webcams
+                html5QrCode.start({ facingMode: "user" }, config, onScanSuccess)
+                    .catch(err => {
+                        readerDiv.style.display = "none";
+                        startBtn.style.display = "block";
+                        showError("Kamerazugriff wurde verweigert.");
+                    });
+            });
+    });
+</script>
+
+</body>
+</html>

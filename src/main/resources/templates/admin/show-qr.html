@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Benutzer QR-Code</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; margin-top: 40px; }
+    </style>
+
+    <!-- Bootstrap 5.3 CSS via WebJar -->
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}">
+    <!-- Bootstrap Icons via WebJar -->
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/font/bootstrap-icons.css}">
+</head>
+<body>
+<div class="container py-5">
+    <p style="color: green; font-weight: bold;">
+        ✓ DIN 5008 Brief wurde automatisch erstellt:
+        <span th:text="${pdfFilename}"></span>
+    </p>
+
+    <h2>QR-Code für Benutzer: <span th:text="${username}"></span></h2>
+    <img th:src="'data:image/png;base64,' + ${qrImage}" alt="Login QR Code"/>
+
+    <p><a th:href="@{/admin/create-user}">Weiteren Benutzer anlegen</a> | <a th:href="@{/dashboard}">Dashboard</a></p>
+</div>
+<script th:src="@{/webjars/bootstrap/js/bootstrap.bundle.min.js}" defer></script>
+
+</body>
+</html>

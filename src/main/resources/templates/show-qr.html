@@ -1,0 +1,8 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<h2>Dein Login QR-Code</h2>
+<img th:src="'data:image/png;base64,' + ${qrImage}" alt="QR-Code"/>
+<p>Diesen Code mit der Kamera auf der Login-Seite vorzeigen.</p>
+</body>
+</html>

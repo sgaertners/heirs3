@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin - Benutzer anlegen</title>
+    <style>
+        body { font-family: sans-serif; margin: 40px; }
+        .error { color: red; margin-bottom: 10px; }
+    </style>
+    <!-- Bootstrap 5.3 CSS via WebJar -->
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}">
+    <!-- Bootstrap Icons via WebJar -->
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/font/bootstrap-icons.css}">
+</head>
+<body>
+<div class="container py-5">
+    <h2>Neuen Benutzer für QR-Login anlegen</h2>
+
+    <div th:if="${error}" class="error" th:text="${error}"></div>
+
+    <form th:action="@{/admin/create-user}" method="post">
+        <div>
+            <label for="username">Benutzername (Pflichtfeld):</label><br>
+            <input type="text" id="username" name="username" required autofocus />
+        </div>
+        <br>
+        <button type="submit">Ed25519 Keys & QR-Code generieren</button>
+    </form>
+    <p><a th:href="@{/dashboard}">Zurück zum Dashboard</a></p>
+</div>
+</body>
+</html>
