@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Benutzerverwaltung - SGS HEIRS</title>
+
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/font/bootstrap-icons.css}">
+
+    <style>
+        body {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            min-height: 100vh;
+            color: #f8fafc;
+            display: flex;
+            flex-direction: column;
+        }
+        .main-content { flex: 1; }
+        .card-custom {
+            border: 1px solid #334155;
+            background-color: #1e293b;
+            border-radius: 1rem;
+        }
+        .table-dark {
+            --bs-table-bg: #1e293b;
+            --bs-table-border-color: #334155;
+        }
+        .table > tbody > tr:hover {
+            background-color: #243247 !important;
+        }
+        .btn-toggle {
+            font-size: 0.72rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 1rem;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+        .modal-content {
+            background-color: #1e293b;
+            border: 1px solid #475569;
+            color: #f8fafc;
+        }
+    </style>
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<main class="main-content container py-4">
+
+    <!-- Header-Zeile -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h4 class="text-white fw-bold mb-1">
+                <i class="bi bi-people text-primary me-2"></i>Benutzerverwaltung
+            </h4>
+            <p class="text-secondary small mb-0">Übersicht & Erblasser-Zuordnung</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a th:href="@{/dashboard}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>Dashboard
+            </a>
+            <a th:href="@{/admin/create-user}" class="btn btn-primary btn-sm shadow">
+                <i class="bi bi-person-plus-fill me-1"></i>Neuen User anlegen
+            </a>
+        </div>
+    </div>
+
+    <!-- Feedback Meldungen -->
+    <div th:if="${success}" class="alert alert-success alert-dismissible fade show py-2 small" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i><span th:text="${success}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show py-2 small" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i><span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Tabelle -->
+    <div class="card card-custom shadow-lg overflow-hidden">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle mb-0" style="font-size: 0.88rem;">
+                    <thead class="table-dark text-secondary border-bottom border-secondary">
+                    <tr>
+                        <th class="ps-4">Benutzername</th>
+                        <th>Empfänger / Adresse</th>
+                        <!-- NEUE SPALTE ZWISCHEN ADRESSE UND AKTIV -->
+                        <th>Erbe von</th>
+                        <th class="text-center">Aktiv</th>
+                        <th class="text-center">Erblasser</th>
+                        <th class="text-center">Verstorben</th>
+                        <th>Gültig bis</th>
+                        <th class="text-end pe-4">Aktionen</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:if="${users == null or users.isEmpty()}">
+                        <td colspan="8" class="text-center py-5 text-secondary">
+                            Keine registrierten Benutzer vorhanden.
+                        </td>
+                    </tr>
+
+                    <tr th:each="u : ${users}">
+                        <!-- Benutzername -->
+                        <td class="ps-4 fw-bold font-monospace text-light">
+                            <i class="bi bi-person text-primary me-1"></i>
+                            <span th:text="${u.username}"></span>
+                        </td>
+
+                        <!-- Empfänger / Adresse -->
+                        <td>
+                            <div class="text-light" th:text="${u.fullName != null and !u.fullName.isBlank() ? u.fullName : '-'}"></div>
+                            <div class="text-secondary small" th:text="${(u.zipCode != null ? u.zipCode : '') + ' ' + (u.city != null ? u.city : '')}"></div>
+                        </td>
+
+                        <!-- NEUE SPALTE: ERBE VON (Kriterien: Aktiv, Nicht verstorben, Nicht Erblasser) -->
+                        <td>
+                            <!-- Wenn User die Kriterien erfüllt: -->
+                            <div th:if="${u.eligibleHeir}">
+                                <div th:if="${u.erbeVon != null and !u.erbeVon.isBlank()}" class="d-flex align-items-center gap-1">
+                                        <span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1">
+                                            <i class="bi bi-link-45deg me-1"></i><span th:text="${u.erbeVon}"></span>
+                                        </span>
+                                    <!-- Edit-Button öffnet Modal -->
+                                    <button type="button" class="btn btn-sm btn-link text-secondary p-0"
+                                            data-bs-toggle="modal" data-bs-target="#assignModal"
+                                            th:data-bs-heir="${u.username}"
+                                            th:data-bs-current="${u.erbeVon}"
+                                            title="Zuordnung ändern">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Noch kein Erblasser zugewiesen -->
+                                <div th:if="${u.erbeVon == null or u.erbeVon.isBlank()}">
+                                    <button type="button" class="btn btn-outline-info btn-sm py-0 px-2" style="font-size: 0.78rem;"
+                                            data-bs-toggle="modal" data-bs-target="#assignModal"
+                                            th:data-bs-heir="${u.username}"
+                                            data-bs-current="">
+                                        <i class="bi bi-plus me-1"></i>Zuordnen
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Wenn Kriterien NICHT erfüllt sind (z. B. Erblasser oder Verstorben) -->
+                            <span th:unless="${u.eligibleHeir}" class="text-secondary small fst-italic">
+                                    -
+                                </span>
+                        </td>
+
+                        <!-- Status 1: Aktiv Toggle -->
+                        <td class="text-center">
+                            <form th:action="@{/admin/users/toggle}" method="post" class="d-inline">
+                                <input type="hidden" name="username" th:value="${u.username}"/>
+                                <input type="hidden" name="field" value="active"/>
+                                <button type="submit" class="btn btn-toggle border"
+                                        th:classappend="${u.active} ? 'btn-success text-white' : 'btn-outline-secondary text-secondary'">
+                                    <span th:text="${u.active} ? 'Aktiv' : 'Inaktiv'"></span>
+                                </button>
+                            </form>
+                        </td>
+
+                        <!-- Status 2: Erblasser Toggle -->
+                        <td class="text-center">
+                            <form th:action="@{/admin/users/toggle}" method="post" class="d-inline">
+                                <input type="hidden" name="username" th:value="${u.username}"/>
+                                <input type="hidden" name="field" value="erblasser"/>
+                                <button type="submit" class="btn btn-toggle border"
+                                        th:classappend="${u.erblasser} ? 'btn-primary text-white' : 'btn-outline-secondary text-secondary'">
+                                    <span th:text="${u.erblasser} ? 'Ja' : 'Nein'"></span>
+                                </button>
+                            </form>
+                        </td>
+
+                        <!-- Status 3: Verstorben Toggle -->
+                        <td class="text-center">
+                            <form th:action="@{/admin/users/toggle}" method="post" class="d-inline">
+                                <input type="hidden" name="username" th:value="${u.username}"/>
+                                <input type="hidden" name="field" value="verstorben"/>
+                                <button type="submit" class="btn btn-toggle border"
+                                        th:classappend="${u.verstorben} ? 'btn-danger text-white' : 'btn-outline-secondary text-secondary'">
+                                    <span th:text="${u.verstorben} ? 'Ja' : 'Nein'"></span>
+                                </button>
+                            </form>
+                        </td>
+
+                        <!-- Gültig bis -->
+                        <td>
+                                <span th:text="${u.validUntil != null ? #temporals.format(u.validUntil, 'dd.MM.yyyy') : '-'}"
+                                      class="font-monospace small text-secondary"></span>
+                        </td>
+
+                        <!-- Aktionen -->
+                        <td class="text-end pe-4">
+                            <div class="d-inline-flex gap-2">
+                                <!-- NEU: Bearbeiten-Button (Gelber Stift) -->
+                                <a th:href="@{/admin/users/edit/{u}(u=${u.username})}"
+                                   class="btn btn-outline-warning btn-sm"
+                                   title="Benutzerdaten bearbeiten">
+                                    <i class="bi bi-pencil-fill"></i>
+                                </a>
+
+                                <a th:href="@{/admin/download-pdf/{file}(file=${u.username.replaceAll('[^a-zA-Z_0-9]', '') + '.pdf'})}"
+                                   target="_blank" class="btn btn-outline-danger btn-sm" title="PDF öffnen">
+                                    <i class="bi bi-file-earmark-pdf"></i>
+                                </a>
+                                <form th:action="@{/admin/users/delete}" method="post" class="d-inline"
+                                      onsubmit="return confirm('Benutzer unwiderruflich löschen?');">
+                                    <input type="hidden" name="username" th:value="${u.username}"/>
+                                    <button type="submit" class="btn btn-outline-secondary btn-sm text-danger border-danger-subtle" title="Löschen">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<!-- ========================================================================= -->
+<!-- MODALER DIALOG: ERBLASSER ZUORDNEN -->
+<!-- ========================================================================= -->
+<div class="modal fade" id="assignModal" tabindex="-1" aria-labelledby="assignModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title fw-bold text-white" id="assignModalLabel">
+                    <i class="bi bi-link-45deg text-primary me-2"></i>Erblasser zuordnen
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <form th:action="@{/admin/users/assign-erblasser}" method="post">
+                <div class="modal-body">
+                    <!-- Ausgewählter Erbe -->
+                    <input type="hidden" id="modalHeirInput" name="heirUsername" value="">
+
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small mb-1">Erbe (Empfänger):</label>
+                        <div class="fs-6 fw-bold text-white font-monospace" id="modalHeirDisplay"></div>
+                    </div>
+
+                    <!-- Dropdown aller verfügbaren Erblasser -->
+                    <div class="mb-3">
+                        <label for="erblasserSelect" class="form-label text-secondary small mb-1">
+                            Erblasser auswählen:
+                        </label>
+                        <select class="form-select bg-dark text-white border-secondary" id="erblasserSelect" name="erblasserUsername">
+                            <option value="">-- Keine Zuordnung / Aufheben --</option>
+                            <option th:each="erb : ${availableErblasser}"
+                                    th:value="${erb.username}"
+                                    th:text="${erb.username + (erb.fullName != null && !erb.fullName.isBlank() ? ' (' + erb.fullName + ')' : '')}">
+                            </option>
+                        </select>
+                        <div class="form-text text-secondary small mt-1">
+                            Es werden nur Benutzer aufgeführt, die als Erblasser markiert sind.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Abbrechen</button>
+                    <button type="submit" class="btn btn-primary btn-sm px-3">Zuordnung speichern</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<footer class="py-3 text-center text-secondary small border-top border-secondary border-opacity-25">
+    <div class="container">&copy; 2026 SGS HEIRS • Administratorbereich</div>
+</footer>
+
+<script th:src="@{/webjars/bootstrap/js/bootstrap.bundle.min.js}" defer></script>
+
+<!-- JavaScript für das Übertragen der Daten in das Modal -->
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const assignModal = document.getElementById('assignModal');
+        if (assignModal) {
+            assignModal.addEventListener('show.bs.modal', function (event) {
+                const button = event.relatedTarget;
+                const heir = button.getAttribute('data-bs-heir');
+                const currentErblasser = button.getAttribute('data-bs-current') || '';
+
+                // Werte in die Modal-Felder setzen
+                document.getElementById('modalHeirInput').value = heir;
+                document.getElementById('modalHeirDisplay').innerText = heir;
+                document.getElementById('erblasserSelect').value = currentErblasser;
+            });
+        }
+    });
+</script>
+
+</body>
+</html>

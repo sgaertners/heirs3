@@ -1,30 +1,141 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Benutzer QR-Code</title>
-    <style>
-        body { font-family: sans-serif; text-align: center; margin-top: 40px; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ausweis erstellt - SGS HEIRS</title>
 
-    <!-- Bootstrap 5.3 CSS via WebJar -->
+    <!-- WebJars: Bootstrap 5.3 & Icons -->
     <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}">
-    <!-- Bootstrap Icons via WebJar -->
     <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/font/bootstrap-icons.css}">
+
+    <style>
+        body {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            min-height: 100vh;
+            color: #f8fafc;
+            display: flex;
+            flex-direction: column;
+        }
+        .main-content { flex: 1; }
+        .card-custom {
+            border: 1px solid #334155;
+            background-color: #1e293b;
+            border-radius: 1rem;
+        }
+        .qr-container {
+            background: #ffffff;
+            padding: 15px;
+            border-radius: 0.75rem;
+            display: inline-block;
+        }
+    </style>
 </head>
 <body>
-<div class="container py-5">
-    <p style="color: green; font-weight: bold;">
-        ✓ DIN 5008 Brief wurde automatisch erstellt:
-        <span th:text="${pdfFilename}"></span>
-    </p>
 
-    <h2>QR-Code für Benutzer: <span th:text="${username}"></span></h2>
-    <img th:src="'data:image/png;base64,' + ${qrImage}" alt="Login QR Code"/>
+<!-- 1. NAVBAR EINBINDEN -->
+<div th:replace="~{fragments/navbar :: navbar}"></div>
 
-    <p><a th:href="@{/admin/create-user}">Weiteren Benutzer anlegen</a> | <a th:href="@{/dashboard}">Dashboard</a></p>
-</div>
+<!-- 2. INHALT -->
+<main class="main-content container py-5">
+
+    <!-- Erfolgs-Banner -->
+    <div class="alert alert-success d-flex align-items-center mb-4 shadow-sm border-0 rounded-3">
+        <i class="bi bi-check-circle-fill fs-3 me-3"></i>
+        <div>
+            <h5 class="alert-heading mb-0 fw-bold">Ausweis & DIN 5008 Brief erfolgreich erstellt!</h5>
+            <small>Der kryptografische Login-Brief steht ab sofort bereit.</small>
+        </div>
+    </div>
+
+    <div class="row g-4">
+
+        <!-- LINKE SPALTE: QR-Code Vorschau -->
+        <div class="col-12 col-md-5 text-center">
+            <div class="card card-custom p-4 h-100 d-flex flex-column align-items-center justify-content-center shadow">
+                <h6 class="text-secondary mb-3"><i class="bi bi-qr-code me-1"></i>Generierter QR-Code</h6>
+
+                <div class="qr-container shadow">
+                    <img th:src="'data:image/png;base64,' + ${qrImage}"
+                         alt="Zugangsausweis QR-Code"
+                         class="img-fluid" style="width: 260px; height: 260px;">
+                </div>
+
+                <p class="text-secondary small mt-3 mb-0">
+                    Kann direkt mit der Handy-Kamera abgescannt werden.
+                </p>
+            </div>
+        </div>
+
+        <!-- RECHTE SPALTE: Ausweisdetails & PDF-Download -->
+        <div class="col-12 col-md-7">
+            <div class="card card-custom p-4 p-md-5 h-100 shadow d-flex flex-column justify-content-between">
+                <div>
+                    <h5 class="text-white fw-bold mb-4 pb-2 border-bottom border-secondary">
+                        <i class="bi bi-person-badge text-primary me-2"></i>Ausweisdaten
+                    </h5>
+
+                    <ul class="list-unstyled mb-4">
+                        <li class="d-flex justify-content-between py-2 border-bottom border-secondary border-opacity-25">
+                            <span class="text-secondary">Benutzername:</span>
+                            <span class="fw-bold text-light font-monospace" th:text="${username}"></span>
+                        </li>
+                        <li class="d-flex justify-content-between py-2 border-bottom border-secondary border-opacity-25">
+                            <span class="text-secondary">Gültig bis:</span>
+                            <span class="badge bg-success-subtle text-success fs-6"
+                                  th:text="${#temporals.format(validUntil, 'dd.MM.yyyy')}"></span>
+                        </li>
+                        <li class="d-flex justify-content-between py-2 border-bottom border-secondary border-opacity-25">
+                            <span class="text-secondary">Signaturverfahren:</span>
+                            <span class="text-light">Ed25519 (Server-Master-Key)</span>
+                        </li>
+                        <li class="d-flex justify-content-between py-2">
+                            <span class="text-secondary">PDF-Dateiname:</span>
+                            <span class="text-info font-monospace small" th:text="${pdfFilename}"></span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- DOWNLOAD-LINK AUF DAS GENERIERTE PDF -->
+                <div class="bg-dark p-3 rounded-3 border border-secondary mb-4">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-file-earmark-pdf-fill text-danger fs-1 me-3"></i>
+                            <div>
+                                <h6 class="text-white mb-0 fw-semibold" th:text="${pdfFilename}"></h6>
+                                <small class="text-secondary">DIN 5008 Brief (druckfertig)</small>
+                            </div>
+                        </div>
+                        <!-- Der Link ruft den Download-Controller auf -->
+                        <a th:href="@{/admin/download-pdf/{file}(file=${pdfFilename})}"
+                           target="_blank"
+                           class="btn btn-danger btn-sm px-3 shadow">
+                            <i class="bi bi-box-arrow-up-right me-1"></i>PDF öffnen / drucken
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Navigations-Aktionen -->
+                <div class="d-flex gap-2">
+                    <a th:href="@{/admin/create-user}" class="btn btn-outline-light flex-grow-1">
+                        <i class="bi bi-plus-circle me-1"></i>Weiteren User anlegen
+                    </a>
+                    <a th:href="@{/dashboard}" class="btn btn-secondary">
+                        <i class="bi bi-speedometer2 me-1"></i>Dashboard
+                    </a>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+</main>
+
+<footer class="py-3 text-center text-secondary small border-top border-secondary border-opacity-25">
+    <div class="container">&copy; 2026 SGS HEIRS • Administratorbereich</div>
+</footer>
+
 <script th:src="@{/webjars/bootstrap/js/bootstrap.bundle.min.js}" defer></script>
-
 </body>
 </html>

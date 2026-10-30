@@ -4,7 +4,12 @@ package de.sgs.heirs.service;
 import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Service;
 
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.File;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.security.*;
 import java.security.spec.PKCS8EncodedKeySpec;
@@ -19,6 +24,7 @@ public class ServerMasterKeyService {
     private static final String PUBLIC_KEY_FILE = "master_public.key";
 
     private KeyPair masterKeyPair;
+    private SecretKey aesMasterKey;
 
     @PostConstruct
     public void init() throws Exception {
@@ -43,7 +49,17 @@ public class ServerMasterKeyService {
             Files.write(privFile.toPath(), this.masterKeyPair.getPrivate().getEncoded());
             Files.write(pubFile.toPath(), this.masterKeyPair.getPublic().getEncoded());
         }
+
+        initAesKey();
     }
+
+    // Am Ende der bestehenden init()-Methode aufrufen:
+    private void initAesKey() throws Exception {
+        byte[] privBytes = masterKeyPair.getPrivate().getEncoded();
+        byte[] key256 = MessageDigest.getInstance("SHA-256").digest(privBytes);
+        this.aesMasterKey = new SecretKeySpec(key256, "AES");
+    }
+
 
     /**
      * Erstellt eine digitale Signatur für den Ausweis (username + validUntil)
@@ -75,5 +91,47 @@ public class ServerMasterKeyService {
 
     private String buildPayload(String username, LocalDate validUntil) {
         return username.trim().toLowerCase() + "|" + validUntil.toString();
+    }
+
+    public String encryptWithMasterKey(String plaintext) {
+        if (plaintext == null || plaintext.isEmpty()) return "";
+        try {
+            if (this.aesMasterKey == null) initAesKey();
+            byte[] iv = new byte[12];
+            new SecureRandom().nextBytes(iv);
+
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            cipher.init(Cipher.ENCRYPT_MODE, this.aesMasterKey, new GCMParameterSpec(128, iv));
+            byte[] cipherText = cipher.doFinal(plaintext.getBytes());
+
+            ByteBuffer buffer = ByteBuffer.allocate(iv.length + cipherText.length);
+            buffer.put(iv);
+            buffer.put(cipherText);
+
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(buffer.array());
+        } catch (Exception e) {
+            throw new RuntimeException("Verschlüsselungsfehler mit Masterkey", e);
+        }
+    }
+
+    public String decryptWithMasterKey(String ciphertext) {
+        if (ciphertext == null || ciphertext.isEmpty()) return "";
+        try {
+            if (this.aesMasterKey == null) initAesKey();
+            byte[] cipherMessage = Base64.getUrlDecoder().decode(ciphertext);
+            ByteBuffer buffer = ByteBuffer.wrap(cipherMessage);
+
+            byte[] iv = new byte[12];
+            buffer.get(iv);
+
+            byte[] cipherText = new byte[buffer.remaining()];
+            buffer.get(cipherText);
+
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            cipher.init(Cipher.DECRYPT_MODE, this.aesMasterKey, new GCMParameterSpec(128, iv));
+            return new String(cipher.doFinal(cipherText));
+        } catch (Exception e) {
+            throw new RuntimeException("Entschlüsselungsfehler mit Masterkey", e);
+        }
     }
 }

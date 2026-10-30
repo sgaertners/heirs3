@@ -1,24 +1,160 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="de">
 <head>
-    <!-- Bootstrap 5.3 CSS via WebJar -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin-Zentrale - SGS HEIRS</title>
+
+    <!-- WebJars: Bootstrap 5.3 & Icons -->
     <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}">
-    <!-- Bootstrap Icons via WebJar -->
     <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/font/bootstrap-icons.css}">
+
+    <style>
+        body {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            min-height: 100vh;
+            color: #f8fafc;
+            display: flex;
+            flex-direction: column;
+        }
+        .main-content { flex: 1; }
+        .card-admin {
+            border: none;
+            border-radius: 1rem;
+            background-color: #1e293b;
+            border: 1px solid #334155;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card-admin:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+            border-color: #475569;
+        }
+    </style>
 </head>
 <body>
-<div class="container py-5">
-    <h1>Erfolgreich eingeloggt!</h1>
-    <p>Willkommen, <b th:text="${username}"></b></p>
 
-    <a th:href="@{/admin/create-user}">User anlegen</a><br /><br/>
+<!-- 1. NAVBAR EINBINDEN -->
+<div th:replace="~{fragments/navbar :: navbar}"></div>
 
-    <form th:action="@{/logout}" method="post">
-        <button type="submit">Logout</button>
-    </form>
-</div>
-<!-- Bootstrap 5.3 Bundle JS via WebJar -->
+<!-- 2. INHALT -->
+<main class="main-content container py-5">
+
+    <!-- Admin Hero Banner in admin/dashboard.html -->
+    <div class="p-4 p-md-5 mb-4 rounded-4 bg-dark shadow-sm border border-secondary">
+        <div class="row align-items-center">
+            <div class="col-md-7">
+            <span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold mb-2">
+                <i class="bi bi-shield-lock-fill me-1"></i>ADMINISTRATOR-KONTROLLZENTRUM
+            </span>
+                <h1 class="display-6 fw-bold text-white mb-1">System-Verwaltung</h1>
+                <p class="text-secondary mb-0">
+                    Eingeloggt als Administrator: <strong class="text-light" th:text="${username}">admin</strong>
+                </p>
+            </div>
+
+            <!-- BUTTONS RECHTS IM HEADER -->
+            <div class="col-md-5 text-md-end mt-3 mt-md-0 d-flex justify-content-md-end gap-2 flex-wrap">
+                <!-- NEU: Button zur Benutzerliste -->
+                <a th:href="@{/admin/users}" class="btn btn-outline-info shadow-sm">
+                    <i class="bi bi-people-fill me-2"></i>Benutzerliste
+                </a>
+                <!-- Button User anlegen -->
+                <a th:href="@{/admin/create-user}" class="btn btn-primary shadow">
+                    <i class="bi bi-person-plus-fill me-2"></i>Neuen User anlegen
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Aktions-Karten -->
+    <div class="row g-4">
+
+        <!-- Karte 1: Neuen User anlegen & DIN 5008 erstellen -->
+        <div class="col-md-4">
+            <div class="card card-admin p-4 h-100">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="p-3 bg-primary bg-opacity-25 text-primary rounded-3 me-3 fs-3">
+                        <i class="bi bi-printer-fill"></i>
+                    </div>
+                    <div>
+                        <h5 class="card-title text-white mb-0">Ausweise & Briefe generieren</h5>
+                        <small class="text-secondary">Automatische PDF-Erstellung</small>
+                    </div>
+                </div>
+                <p class="text-secondary small mb-4">
+                    Erstelle ein neues Benutzerkonto mit kryptografischem Ed25519-Ausweis und erzeuge automatisch einen versandfertigen DIN-5008-Brief mit integriertem QR-Code.
+                </p>
+                <a th:href="@{/admin/create-user}" class="btn btn-outline-light w-100 mt-auto">
+                    <i class="bi bi-arrow-right-circle me-1"></i>User & PDF-Brief erstellen
+                </a>
+            </div>
+        </div>
+
+        <!-- Karte 2: Server Master-Key Status -->
+        <div class="col-md-4">
+            <div class="card card-admin p-4 h-100">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="p-3 bg-success bg-opacity-25 text-success rounded-3 me-3 fs-3">
+                        <i class="bi bi-key-fill"></i>
+                    </div>
+                    <div>
+                        <h5 class="card-title text-white mb-0">Server Master-Key</h5>
+                        <small class="text-secondary">Kryptografische Signiereinheit</small>
+                    </div>
+                </div>
+                <p class="text-secondary small mb-3">
+                    Der Server signiert alle Ausweise mit dem persistenten Ed25519-Schlüssel.
+                </p>
+                <ul class="list-unstyled small text-secondary mb-0">
+                    <li class="d-flex justify-content-between py-1 border-bottom border-secondary border-opacity-25">
+                        <span>Algorithmus:</span>
+                        <span class="text-light fw-bold font-monospace">Ed25519 (Edwards-curve)</span>
+                    </li>
+                    <li class="d-flex justify-content-between py-1 border-bottom border-secondary border-opacity-25">
+                        <span>Schlüsselspeicher:</span>
+                        <span class="badge bg-success-subtle text-success">master_private.key (Aktiv)</span>
+                    </li>
+                    <li class="d-flex justify-content-between py-1">
+                        <span>Gültigkeitsdauer Briefe:</span>
+                        <span class="text-light">1 Jahr (Standard)</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- KARTE: Benutzerverwaltung / Übersicht -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card card-admin p-4 h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="p-3 bg-info bg-opacity-25 text-info rounded-3 me-3 fs-3">
+                            <i class="bi bi-people-fill"></i>
+                        </div>
+                        <div>
+                            <h5 class="card-title text-white mb-0">Benutzerverwaltung</h5>
+                            <small class="text-secondary">Übersicht aller Konten</small>
+                        </div>
+                    </div>
+                    <p class="text-secondary small mb-3">
+                        Alle registrierten Benutzer einsehen, erzeugte DIN-5008-PDFs herunterladen oder Konten unwiderruflich löschen.
+                    </p>
+                </div>
+                <a th:href="@{/admin/users}" class="btn btn-outline-info w-100">
+                    <i class="bi bi-table me-1"></i>Zur Benutzerübersicht
+                </a>
+            </div>
+        </div>
+
+
+    </div>
+
+</main>
+
+<footer class="py-3 text-center text-secondary small border-top border-secondary border-opacity-25">
+    <div class="container">&copy; 2026 SGS HEIRS • Administratorbereich</div>
+</footer>
+
 <script th:src="@{/webjars/bootstrap/js/bootstrap.bundle.min.js}" defer></script>
-
 </body>
 </html>

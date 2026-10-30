@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- Pfade und Dateinamen -->
+    <property name="LOG_PATH" value="logs" />
+    <property name="LOG_FILE_NAME" value="heirs" />
+
+    <!-- 1. Konsolen-Ausgabe (Standard Spring Boot Farben) -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- 2. Datei-Ausgabe mit Rotation und Archivierung -->
+    <appender name="ROLLING_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- Aktive Datei -->
+        <file>${LOG_PATH}/${LOG_FILE_NAME}.log</file>
+
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+
+        <!-- Rotations- und Archivierungs-Logik -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- Archiv-Muster: Durch das ".gz" am Ende wird das Archiv automatisch gezippt -->
+            <!-- %d = Datum, %i = Index-Nummer, falls an einem Tag mehrfach 10MB erreicht werden -->
+            <fileNamePattern>${LOG_PATH}/archived/${LOG_FILE_NAME}-%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+
+            <!-- Maximale Größe pro Datei bevor rotiert wird -->
+            <maxFileSize>10MB</maxFileSize>
+
+            <!-- Behalte Archive für maximal 30 Tage -->
+            <maxHistory>30</maxHistory>
+
+            <!-- Maximale Gesamtgröße aller Archive zusammen (z.B. 1GB) -->
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <!-- Log-Level festlegen -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="ROLLING_FILE" />
+    </root>
+
+</configuration>

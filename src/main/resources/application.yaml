@@ -1,3 +1,6 @@
 spring:
   application:
     name: heirs
+  main:
+  # Mögliche Werte: console (Standard), log, off
+    banner-mode: log

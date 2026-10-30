@@ -1,6 +1,7 @@
 package de.sgs.heirs.service;
 
 
+import de.sgs.heirs.model.SenderInfo;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
@@ -14,7 +15,6 @@ import org.springframework.stereotype.Service;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
@@ -23,20 +23,26 @@ import java.time.format.DateTimeFormatter;
 @Service
 public class Din5008PdfService {
 
+    private final SenderInfo senderInfo;
+
     private static final String OUTPUT_DIR = "generated-letters";
 
     // 1 mm entspricht ca. 2.83465 Punkten in PDFBox (72 DPI)
     private static final float MM_TO_PT = 2.83465f;
 
-    public File createLetterPdf(String username, LocalDate validUntil, BufferedImage qrImage) throws IOException {
+    public Din5008PdfService(SenderInfo senderInfo) {
+        this.senderInfo = senderInfo;
+    }
+
+    public File createLetterPdf(String username, String fullName,
+                                String street,
+                                String zipCode,
+                                String city, LocalDate validUntil, BufferedImage qrImage) throws IOException {
         // 1. Dateinamen bereinigen: Nur Buchstaben und Unterstrich erlauben
         String safeFilename = sanitizeFilename(username) + ".pdf";
 
         // Ausgabe-Ordner anlegen
         Path dirPath = Paths.get(OUTPUT_DIR);
-        if (!Files.exists(dirPath)) {
-            Files.createDirectories(dirPath);
-        }
         File targetFile = dirPath.resolve(safeFilename).toFile();
 
         DateTimeFormatter germanDate = DateTimeFormatter.ofPattern("dd.MM.yyyy");
@@ -54,34 +60,39 @@ public class Din5008PdfService {
                 float leftMargin = 25 * MM_TO_PT;                 // DIN 5008: 25mm linker Rand
 
                 // --- 1. RÜCKSENDEANGABE (45 mm von oben, 7 pt klein) ---
+                // 1. Rücksendezeile (45 mm von oben)
                 cs.beginText();
                 cs.setFont(fontRegular, 7);
                 cs.newLineAtOffset(leftMargin, pageHeight - (45 * MM_TO_PT));
-                cs.showText("Musterfirma GmbH • Hauptstraße 1 • 10115 Berlin");
+                cs.showText(senderInfo.getAbsender()); // <-- Stefan Gärtners • Scharnhorststraße 21e • 46485 Wesel
                 cs.endText();
 
-                // --- 2. EMPFÄNGERFELD (50 mm von oben) ---
+                // 2. DYNAMISCHES EMPFÄNGERFELD (55 mm von oben)
+                String recipientName = (fullName != null && !fullName.isBlank()) ? fullName : username;
+                String recipientStreet = (street != null && !street.isBlank()) ? street : "Postfach / Hausadresse";
+                String recipientLocation = ((zipCode != null ? zipCode : "") + " " + (city != null ? city : "")).trim();
+                if (recipientLocation.isBlank()) recipientLocation = "Deutschland";
+
                 cs.beginText();
                 cs.setFont(fontRegular, 10);
                 cs.setLeading(14);
                 cs.newLineAtOffset(leftMargin, pageHeight - (55 * MM_TO_PT));
-                cs.showText("Herrn/Frau");
+                cs.showText(recipientName);
                 cs.newLine();
-                cs.showText(username);
+                cs.showText(recipientStreet);
                 cs.newLine();
-                cs.showText("Musterabteilung");
-                cs.newLine();
-                cs.showText("Musterstraße 42");
-                cs.newLine();
-                cs.showText("12345 Musterstadt");
+                cs.showText(recipientLocation);
                 cs.endText();
 
+
                 // --- 3. DATUM (ca. 85 mm von oben, rechtsbündig bei 170 mm) ---
-                String today = LocalDate.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
+//                String today = LocalDate.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
+                LocalDate today = LocalDate.now();
                 cs.beginText();
                 cs.setFont(fontRegular, 10);
                 cs.newLineAtOffset(145 * MM_TO_PT, pageHeight - (85 * MM_TO_PT));
-                cs.showText("Berlin, den " + today);
+//                cs.showText("Berlin, den " + today);
+                cs.showText(senderInfo.getDatumszeile(today));
                 cs.endText();
 
                 // --- 4. BETREFF (ab 103,5 mm von oben, Fettdruck) ---
@@ -142,7 +153,7 @@ public class Din5008PdfService {
     public String sanitizeFilename(String rawUsername) {
         if (rawUsername == null) return "unbekannt";
         // Entfernt alles, was kein Buchstabe und kein Unterstrich ist
-        String cleaned = rawUsername.replaceAll("[^a-zA-Z_]", "");
+        String cleaned = rawUsername.replaceAll("[^a-zA-Z_0-9]", "");
         return cleaned.isBlank() ? "benutzer" : cleaned;
     }
 }

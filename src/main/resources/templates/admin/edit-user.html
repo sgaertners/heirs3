@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Benutzer bearbeiten - SGS HEIRS</title>
+
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/font/bootstrap-icons.css}">
+
+    <style>
+        body {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            min-height: 100vh;
+            color: #f8fafc;
+            display: flex;
+            flex-direction: column;
+        }
+        .main-content { flex: 1; }
+        .card-custom {
+            border: 1px solid #334155;
+            background-color: #1e293b;
+            border-radius: 0.75rem;
+        }
+        .form-label-sm {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #94a3b8;
+            margin-bottom: 0.25rem;
+        }
+        .form-control-sm {
+            background-color: #0f172a !important;
+            border-color: #334155 !important;
+            color: #f8fafc !important;
+            font-size: 0.85rem;
+            padding: 0.4rem 0.65rem;
+        }
+    </style>
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<main class="main-content container py-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+
+            <a th:href="@{/admin/users}" class="btn btn-link text-secondary text-decoration-none p-0 mb-3 small">
+                <i class="bi bi-arrow-left me-1"></i>Zurück zur Benutzerliste
+            </a>
+
+            <div class="card card-custom shadow-lg p-3 p-md-4">
+
+                <div class="d-flex align-items-center mb-3 pb-2 border-bottom border-secondary border-opacity-25">
+                    <div class="p-2 bg-warning bg-opacity-25 text-warning rounded-3 me-2 fs-4">
+                        <i class="bi bi-pencil-square"></i>
+                    </div>
+                    <div>
+                        <h5 class="card-title text-white mb-0 fw-bold">Benutzerdaten bearbeiten</h5>
+                        <small class="text-secondary" style="font-size: 0.78rem;">Aktualisiert CSV und generiert den DIN-5008-Brief neu</small>
+                    </div>
+                </div>
+
+                <form th:action="@{/admin/users/edit}" method="post">
+
+                    <!-- Benutzername (Primärschlüssel, nicht änderbar) -->
+                    <div class="mb-2">
+                        <label class="form-label-sm">
+                            <i class="bi bi-person-badge me-1 text-primary"></i>Benutzername (nicht änderbar)
+                        </label>
+                        <input type="text" class="form-control form-control-sm text-secondary"
+                               name="username" th:value="${user.username}" readonly>
+                    </div>
+
+                    <!-- Adress-Abschnitt -->
+                    <div class="p-2 my-2 rounded bg-dark border border-secondary border-opacity-25">
+                        <div class="text-info fw-semibold mb-2" style="font-size: 0.75rem;">
+                            <i class="bi bi-geo-alt me-1"></i>EMPFÄNGERADRESSE
+                        </div>
+
+                        <div class="mb-2">
+                            <label for="fullName" class="form-label-sm">Vollständiger Name / Anrede</label>
+                            <input type="text" class="form-control form-control-sm" id="fullName" name="fullName"
+                                   th:value="${user.fullName}">
+                        </div>
+
+                        <div class="mb-2">
+                            <label for="street" class="form-label-sm">Straße & Hausnummer</label>
+                            <input type="text" class="form-control form-control-sm" id="street" name="street"
+                                   th:value="${user.street}">
+                        </div>
+
+                        <div class="row g-2">
+                            <div class="col-4">
+                                <label for="zipCode" class="form-label-sm">PLZ</label>
+                                <input type="text" class="form-control form-control-sm" id="zipCode" name="zipCode"
+                                       th:value="${user.zipCode}">
+                            </div>
+                            <div class="col-8">
+                                <label for="city" class="form-label-sm">Ort / Stadt</label>
+                                <input type="text" class="form-control form-control-sm" id="city" name="city"
+                                       th:value="${user.city}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gültigkeitsdatum -->
+                    <div class="mb-3">
+                        <label for="validUntil" class="form-label-sm">
+                            <i class="bi bi-calendar-event me-1 text-primary"></i>Gültig bis
+                        </label>
+                        <input type="date" class="form-control form-control-sm" id="validUntil" name="validUntil"
+                               th:value="${user.validUntil}" required>
+                    </div>
+
+                    <!-- Status-Switches -->
+                    <div class="p-2 my-2 rounded bg-dark border border-secondary border-opacity-25">
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" id="active" name="active" value="true"
+                                   th:checked="${user.active}">
+                            <label class="form-check-label text-white small" for="active">Konto ist <strong>Aktiv</strong></label>
+                        </div>
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" id="erblasser" name="erblasser" value="true"
+                                   th:checked="${user.erblasser}">
+                            <label class="form-check-label text-white small" for="erblasser">Benutzer ist <strong>Erblasser</strong></label>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="verstorben" name="verstorben" value="true"
+                                   th:checked="${user.verstorben}">
+                            <label class="form-check-label text-white small" for="verstorben">Benutzer ist <strong>Verstorben</strong></label>
+                        </div>
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="d-flex gap-2 mt-3">
+                        <a th:href="@{/admin/users}" class="btn btn-outline-secondary btn-sm flex-grow-1">Abbrechen</a>
+                        <button type="submit" class="btn btn-warning btn-sm flex-grow-1 shadow fw-semibold text-dark">
+                            <i class="bi bi-check-lg me-1"></i>Änderungen speichern
+                        </button>
+                    </div>
+                </form>
+
+            </div>
+
+        </div>
+    </div>
+</main>
+
+<footer class="py-3 text-center text-secondary small border-top border-secondary border-opacity-25">
+    <div class="container">&copy; 2026 SGS HEIRS • Administratorbereich</div>
+</footer>
+
+<script th:src="@{/webjars/bootstrap/js/bootstrap.bundle.min.js}" defer></script>
+</body>
+</html>

@@ -3,76 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anmeldung - QR-Code & Admin</title>
+    <title>SGS HEIRS - Authentifizierung</title>
 
-    <!-- Bootstrap 5.3 CSS via WebJar -->
+    <!-- WebJars: Bootstrap 5.3 & Icons -->
     <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}">
-    <!-- Bootstrap Icons via WebJar -->
     <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/font/bootstrap-icons.css}">
 
-    <!-- HTML5 QR-Code Scanner -->
+    <!-- QR Scanner JS -->
     <script src="https://unpkg.com/html5-qrcode"></script>
 
     <style>
         body {
-            background-color: #f8f9fa;
+            background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
             min-height: 100vh;
             display: flex;
-            align-items: center;
+            flex-direction: column;
+        }
+        .main-content {
+            flex: 1;
+        }
+        .card-auth {
+            border: none;
+            border-radius: 1rem;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .card-auth:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.1) !important;
         }
         #reader {
-            width: 100%;
-            border-radius: 0.375rem;
+            border-radius: 0.5rem;
             overflow: hidden;
+            background: #000;
         }
         #reader video {
             object-fit: cover;
-            border-radius: 0.375rem;
         }
     </style>
 </head>
 <body>
 
-<div class="container py-5">
+<!-- 1. HEADER-FRAGMENT EINBINDEN -->
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<!-- 2. HAUPTINHALT -->
+<main class="main-content container py-5">
+
+    <!-- Hero / Begrüßung -->
+    <div class="text-center mb-5">
+        <h1 class="display-6 fw-bold text-dark mb-2">Zugangskontrolle & Login</h1>
+        <p class="text-secondary lead fs-6">Wähle deine bevorzugte Anmeldemethode aus.</p>
+    </div>
+
     <div class="row justify-content-center g-4">
-        <div class="col-12 col-lg-5">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-header bg-dark text-white py-3">
-                    <h5 class="card-title mb-0">
-                        <i class="bi bi-shield-lock me-2"></i>Login
+
+        <!-- KARTE 1: Login -->
+        <div class="col-12 col-md-6 col-lg-5">
+            <div class="card card-auth shadow-sm h-100 bg-white">
+                <div class="card-header bg-dark text-white py-3 rounded-top-4">
+                    <h5 class="card-title mb-0 d-flex align-items-center">
+                        <i class="bi bi-person-lock fs-4 me-2"></i>Anmeldung
                     </h5>
                 </div>
                 <div class="card-body p-4">
-                    <p class="text-muted small">
-                        Zugang zur Ausstellung neuer digitaler Ausweise und PDF-Briefe.
+                    <p class="text-muted small mb-4">
+                        Verwaltungsbereich zur Erzeugung neuer Ausweise und Briefe.
                     </p>
 
-                    <!-- Feedback-Meldungen Admin Login -->
+                    <!-- Feedback Meldungen Admin -->
                     <div th:if="${param.error != null and param.error != 'expired' and param.error != 'invalid_signature' and param.error != 'auth_failed'}"
-                         class="alert alert-danger d-flex align-items-center" role="alert">
-                        <i class="bi bi-exclamation-circle-fill flex-shrink-0 me-2"></i>
-                        <div>Benutzername oder Passwort falsch!</div>
+                         class="alert alert-danger d-flex align-items-center small">
+                        <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>Falscher Benutzername oder Passwort!
+                    </div>
+                    <div th:if="${param.logout}" class="alert alert-success d-flex align-items-center small">
+                        <i class="bi bi-check-circle-fill me-2 fs-5"></i>Erfolgreich abgemeldet!
                     </div>
 
-                    <div th:if="${param.logout}" class="alert alert-success d-flex align-items-center" role="alert">
-                        <i class="bi bi-check-circle-fill flex-shrink-0 me-2"></i>
-                        <div>Erfolgreich abgemeldet.</div>
+                    <div th:if="${param.error == 'unexpected_error'}" class="alert alert-danger d-flex align-items-center small">
+                        <i class="bi bi-shield-x me-2 fs-5"></i>
+                        <div>Ein Systemfehler ist aufgetreten. Zu deiner Sicherheit wurdest du automatisch abgemeldet!</div>
                     </div>
 
-                    <!-- Login-Formular -->
-                    <form th:action="@{/master}" method="post" class="mt-4">
+                    <div th:if="${param.error == 'http_error'}" class="alert alert-danger d-flex align-items-center small">
+                        <i class="bi bi-exclamation-octagon-fill me-2 fs-5"></i>
+                        <div>Die aufgerufene Ressource ist fehlerhaft. Du wurdest automatisch abgemeldet.</div>
+                    </div>
+
+                    <div th:if="${param.error == 'access_denied'}" class="alert alert-warning d-flex align-items-center small">
+                        <i class="bi bi-slash-circle-fill me-2 fs-5"></i>
+                        <div>Unberechtigter Zugriff erkannt! Du wurdest sicherheitsbedingt abgemeldet.</div>
+                    </div>
+
+                    <!-- Formular: Sendet per POST an /master (wie in der SecurityConfig definiert) -->
+                    <form th:action="@{/master}" method="post">
                         <div class="form-floating mb-3">
-                            <input type="text" class="form-control" id="username" name="username" placeholder="admin" required>
+                            <input type="text" class="form-control" id="username" name="username" placeholder="admin" required autocomplete="username">
                             <label for="username"><i class="bi bi-person me-1"></i>Benutzername</label>
                         </div>
 
                         <div class="form-floating mb-4">
-                            <input type="password" class="form-control" id="password" name="password" placeholder="Passwort" required>
+                            <input type="password" class="form-control" id="password" name="password" placeholder="Passwort" required autocomplete="current-password">
                             <label for="password"><i class="bi bi-key me-1"></i>Passwort</label>
                         </div>
 
-                        <button type="submit" class="btn btn-dark w-100 py-2">
-                            <i class="bi bi-box-arrow-in-right me-1"></i>Anmelden
+                        <button type="submit" class="btn btn-dark w-100 py-3 shadow-sm rounded-3 fw-semibold">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>Anmelden
                         </button>
                     </form>
                 </div>
@@ -80,12 +115,19 @@
         </div>
 
     </div>
-</div>
+</main>
 
-<!-- Bootstrap 5.3 Bundle JS via WebJar -->
+<!-- Footer -->
+<footer class="py-3 text-center text-muted small border-top bg-white">
+    <div class="container">
+        &copy; 2026 SGS HEIRS • Sichere Authentifizierung mit Ed25519 & DIN 5008
+    </div>
+</footer>
+
+<!-- Bootstrap JS via WebJar -->
 <script th:src="@{/webjars/bootstrap/js/bootstrap.bundle.min.js}" defer></script>
 
-<!-- QR-Scanner Logik -->
+<!-- QR Scanner Steuerung -->
 <script>
     const html5QrCode = new Html5Qrcode("reader");
     const errorBox = document.getElementById("jsError");
@@ -103,14 +145,14 @@
             if (decodedText.startsWith("http://") || decodedText.startsWith("https://")) {
                 window.location.href = decodedText;
             } else {
-                showError("Gescannter QR-Code enthält keinen gültigen Ausweis-Link.");
+                showError("Kein gültiger Ausweis-Link erkannt.");
             }
         });
     }
 
     startBtn.addEventListener("click", () => {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            showError("Browser blockiert Kamera: HTTPS oder Localhost erforderlich!");
+            showError("Kamerazugriff erfordert HTTPS oder localhost!");
             return;
         }
 
@@ -119,15 +161,13 @@
 
         const config = { fps: 15, qrbox: { width: 250, height: 250 } };
 
-        // Bevorzuge Smartphone-Rückkamera
         html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
             .catch(() => {
-                // Fallback für Laptops / Webcams
                 html5QrCode.start({ facingMode: "user" }, config, onScanSuccess)
-                    .catch(err => {
+                    .catch(() => {
                         readerDiv.style.display = "none";
                         startBtn.style.display = "block";
-                        showError("Kamerazugriff wurde verweigert.");
+                        showError("Kamerazugriff wurde im Browser abgelehnt.");
                     });
             });
     });
