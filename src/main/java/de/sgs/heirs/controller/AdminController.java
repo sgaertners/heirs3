@@ -274,4 +274,61 @@ public class AdminController {
         return "redirect:/admin/users";
     }
 
+    // In AdminController.java ergänzen:
+
+    /**
+     * Generiert den DIN-5008-Brief für einen bestehenden Benutzer komplett neu
+     */
+    @PostMapping("/users/refresh-letter")
+    public String refreshLetter(@RequestParam("username") String username,
+                                HttpServletRequest request,
+                                RedirectAttributes redirectAttributes) {
+        try {
+            Optional<UserAccount> userOpt = csvService.findByUsername(username.trim());
+            if (userOpt.isEmpty()) {
+                redirectAttributes.addFlashAttribute("error", "Benutzer '" + username + "' nicht gefunden.");
+                return "redirect:/admin/users";
+            }
+
+            UserAccount user = userOpt.get();
+
+            // 1. Frische Signatur mit aktuellem Zeitstempel und hinterlegtem Gültigkeitsdatum
+            LocalDate validUntil = user.getValidUntil() != null ? user.getValidUntil() : LocalDate.now().plusYears(1);
+            String signature = masterKeyService.signBadge(user.getUsername(), validUntil);
+
+            // 2. Login-URL für QR-Code neu zusammensetzen
+            String baseUrl = ServletUriComponentsBuilder.fromRequestUri(request).replacePath(null).build().toUriString();
+            String loginUrl = String.format("%s/qr-auth?u=%s&exp=%s&sig=%s",
+                    baseUrl,
+                    user.getUsername(),
+                    validUntil,
+                    signature
+            );
+
+            // 3. QR-Code & DIN 5008 PDF mit aktuellen Daten (und SenderInfo) neu erzeugen
+            BufferedImage qrImage = qrCodeService.generateQrBufferedImage(loginUrl, 300, 300);
+            File pdfFile = pdfService.createLetterPdf(
+                    user.getUsername(),
+                    user.getFullName(),
+                    user.getStreet(),
+                    user.getZipCode(),
+                    user.getCity(),
+                    validUntil,
+                    qrImage
+            );
+
+            // 4. Audit-Log schreiben
+            auditService.log(user.getUsername(), "LETTER_REFRESHED", "pdf=" + pdfFile.getName());
+
+            redirectAttributes.addFlashAttribute("success",
+                    "DIN-5008-Brief für '" + username + "' wurde erfolgreich aktualisiert!");
+
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error",
+                    "Fehler beim Aktualisieren des Briefs: " + e.getMessage());
+        }
+
+        return "redirect:/admin/users";
+    }
+
 }

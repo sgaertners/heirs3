@@ -193,19 +193,56 @@
                         </td>
 
                         <!-- Aktionen -->
+<!--                        <td class="text-end pe-4">-->
+<!--                            <div class="d-inline-flex gap-2">-->
+<!--                                &lt;!&ndash; NEU: Bearbeiten-Button (Gelber Stift) &ndash;&gt;-->
+<!--                                <a th:href="@{/admin/users/edit/{u}(u=${u.username})}"-->
+<!--                                   class="btn btn-outline-warning btn-sm"-->
+<!--                                   title="Benutzerdaten bearbeiten">-->
+<!--                                    <i class="bi bi-pencil-fill"></i>-->
+<!--                                </a>-->
+
+<!--                                <a th:href="@{/admin/download-pdf/{file}(file=${u.username.replaceAll('[^a-zA-Z_0-9]', '') + '.pdf'})}"-->
+<!--                                   target="_blank" class="btn btn-outline-danger btn-sm" title="PDF öffnen">-->
+<!--                                    <i class="bi bi-file-earmark-pdf"></i>-->
+<!--                                </a>-->
+<!--                                <form th:action="@{/admin/users/delete}" method="post" class="d-inline"-->
+<!--                                      onsubmit="return confirm('Benutzer unwiderruflich löschen?');">-->
+<!--                                    <input type="hidden" name="username" th:value="${u.username}"/>-->
+<!--                                    <button type="submit" class="btn btn-outline-secondary btn-sm text-danger border-danger-subtle" title="Löschen">-->
+<!--                                        <i class="bi bi-trash"></i>-->
+<!--                                    </button>-->
+<!--                                </form>-->
+<!--                            </div>-->
+<!--                        </td>-->
+                        <!-- In admin/users.html in der Aktionen-Spalte: -->
+
                         <td class="text-end pe-4">
-                            <div class="d-inline-flex gap-2">
-                                <!-- NEU: Bearbeiten-Button (Gelber Stift) -->
+                            <div class="d-inline-flex gap-2 align-items-center">
+
+                                <!-- NEU: Brief Aktualisieren-Button -->
+                                <form th:action="@{/admin/users/refresh-letter}" method="post" class="d-inline"
+                                      onsubmit="return confirm('Möchtest du den DIN-5008-Brief für diesen Benutzer wirklich neu generieren?');">
+                                    <input type="hidden" name="username" th:value="${u.username}"/>
+                                    <button type="submit" class="btn btn-outline-info btn-sm" title="Brief & QR-Code neu generieren">
+                                        <i class="bi bi-arrow-repeat"></i>
+                                    </button>
+                                </form>
+
+                                <!-- Bearbeiten-Button (Gelber Stift) -->
                                 <a th:href="@{/admin/users/edit/{u}(u=${u.username})}"
                                    class="btn btn-outline-warning btn-sm"
                                    title="Benutzerdaten bearbeiten">
                                     <i class="bi bi-pencil-fill"></i>
                                 </a>
 
+                                <!-- PDF-Brief öffnen / drucken -->
                                 <a th:href="@{/admin/download-pdf/{file}(file=${u.username.replaceAll('[^a-zA-Z_0-9]', '') + '.pdf'})}"
-                                   target="_blank" class="btn btn-outline-danger btn-sm" title="PDF öffnen">
+                                   target="_blank" class="btn btn-outline-danger btn-sm" title="Aktuelles PDF ansehen">
                                     <i class="bi bi-file-earmark-pdf"></i>
                                 </a>
+
+                                <!-- Löschen-Button -->
                                 <form th:action="@{/admin/users/delete}" method="post" class="d-inline"
                                       onsubmit="return confirm('Benutzer unwiderruflich löschen?');">
                                     <input type="hidden" name="username" th:value="${u.username}"/>
@@ -213,6 +250,7 @@
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </form>
+
                             </div>
                         </td>
                     </tr>
