@@ -37,7 +37,9 @@ public class Din5008PdfService {
     public File createLetterPdf(String username, String fullName,
                                 String street,
                                 String zipCode,
-                                String city, LocalDate validUntil, BufferedImage qrImage) throws IOException {
+                                String city,
+                                String erbeVon,
+                                LocalDate validUntil, BufferedImage qrImage) throws IOException {
         // 1. Dateinamen bereinigen: Nur Buchstaben und Unterstrich erlauben
         String safeFilename = sanitizeFilename(username) + ".pdf";
 
@@ -112,6 +114,10 @@ public class Din5008PdfService {
                 cs.newLine();
                 cs.newLine();
                 cs.showText("anbei erhältst du deinen persönlichen Zugangsausweis.");
+                cs.newLine();
+                cs.newLine();
+                cs.showText("Damit kannst Du nach dem Tod vom Erblasser " + erbeVon + " auf dessen digitalen Nachlass zugreifen.");
+                cs.newLine();
                 cs.newLine();
                 cs.showText("Der unten stehende QR-Code ist kryptografisch signiert und gültig bis: " + validUntil.format(germanDate));
                 cs.newLine();

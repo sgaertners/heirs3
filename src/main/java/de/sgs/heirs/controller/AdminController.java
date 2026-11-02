@@ -95,10 +95,11 @@ public class AdminController {
             String signature = masterKeyService.signBadge(sanitizedUsername, validUntil);
             String baseUrl = ServletUriComponentsBuilder.fromRequestUri(request).replacePath(null).build().toUriString();
             String loginUrl = String.format("%s/qr-auth?u=%s&exp=%s&sig=%s", baseUrl, sanitizedUsername, validUntil, signature);
+            String erbeVon = account.getErbeVon() != null ? account.getErbeVon() : erblasser ? "Erblasser" : "Erbner";
 
             // 3. QR-Code & DIN 5008 Brief generieren
             BufferedImage qrImage = qrCodeService.generateQrBufferedImage(loginUrl, 300, 300);
-            File pdfFile = pdfService.createLetterPdf(sanitizedUsername, fullName, street, zipCode, city, validUntil, qrImage);
+            File pdfFile = pdfService.createLetterPdf(sanitizedUsername, fullName, street, zipCode, city, erbeVon, validUntil, qrImage);
 
             String qrImageBase64 = qrCodeService.generateQrCodeBase64(loginUrl, 300, 300);
             model.addAttribute("username", sanitizedUsername);
@@ -262,9 +263,10 @@ public class AdminController {
             String signature = masterKeyService.signBadge(username, validUntil);
             String baseUrl = ServletUriComponentsBuilder.fromRequestUri(request).replacePath(null).build().toUriString();
             String loginUrl = String.format("%s/qr-auth?u=%s&exp=%s&sig=%s", baseUrl, username, validUntil, signature);
+            String erbeVon = user.getErbeVon() != null ? user.getErbeVon() : "Erblasser";
 
             BufferedImage qrImage = qrCodeService.generateQrBufferedImage(loginUrl, 300, 300);
-            pdfService.createLetterPdf(username, fullName, street, zipCode, city, validUntil, qrImage);
+            pdfService.createLetterPdf(username, fullName, street, zipCode, city, erbeVon, validUntil, qrImage);
 
             redirectAttributes.addFlashAttribute("success", "Daten für '" + username + "' erfolgreich aktualisiert und Brief neu generiert.");
         } catch (Exception e) {
@@ -313,6 +315,7 @@ public class AdminController {
                     user.getStreet(),
                     user.getZipCode(),
                     user.getCity(),
+                    user.getErbeVon(),
                     validUntil,
                     qrImage
             );

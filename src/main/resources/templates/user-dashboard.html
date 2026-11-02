@@ -93,24 +93,38 @@
                         <span class="badge bg-light text-secondary border" th:text="${entry.value.size() + ' Datei(en)'}"></span>
                     </div>
                     <div class="card-body p-0">
+                        <!-- In templates/dashboard.html in der Dateiliste der Erben-Ansicht: -->
+
                         <ul class="list-group list-group-flush">
                             <li th:each="f : ${entry.value}" class="list-group-item d-flex justify-content-between align-items-center p-3">
                                 <div class="d-flex align-items-center">
-                                    <!-- Dynamisches Icon passend zum Dateityp -->
+                                    <!-- Icon -->
                                     <i class="bi fs-3 me-3" th:classappend="${f.iconClass}"></i>
                                     <div>
-                                        <div class="fw-semibold text-dark" th:text="${f.filename}">dokument.pdf</div>
+                                        <div class="fw-semibold text-dark d-flex align-items-center gap-2">
+                                            <span th:text="${f.filename}">dokument.pdf</span>
+                                            <!-- Badge: Media vs. Verschlüsselt -->
+                                            <span th:if="${f.audioOrVideo}" class="badge bg-secondary-subtle text-secondary border small" style="font-size: 0.65rem;">
+                        <i class="bi bi-play-circle me-1"></i>Audio/Video
+                    </span>
+                                            <span th:unless="${f.audioOrVideo}" class="badge bg-success-subtle text-success border small" style="font-size: 0.65rem;">
+                        <i class="bi bi-shield-lock me-1"></i>AES-256
+                    </span>
+                                        </div>
                                         <small class="text-muted">
                                             <span th:text="${#numbers.formatDecimal(f.sizeBytes / 1024.0, 1, 1)} + ' KB'"></span>
                                             • <code class="text-secondary" th:text="${f.mimeType}"></code>
                                         </small>
                                     </div>
                                 </div>
-                                <!-- Button zur Entschlüsselung -->
+
+                                <!-- Button: Abspielen bei Audio/Video, Entschlüsseln bei Dokumenten -->
                                 <a th:href="@{/user/file/download(erblasser=${f.erblasserUsername}, heir=${f.heirUsername}, filename=${f.filename})}"
                                    target="_blank"
-                                   class="btn btn-outline-success btn-sm px-3 shadow-sm">
-                                    <i class="bi bi-unlock-fill me-1"></i>Öffnen
+                                   class="btn btn-sm px-3 shadow-sm"
+                                   th:classappend="${f.audioOrVideo} ? 'btn-outline-primary' : 'btn-outline-success'">
+                                    <i class="bi me-1" th:classappend="${f.audioOrVideo} ? 'bi-play-fill' : 'bi-unlock-fill'"></i>
+                                    <span th:text="${f.audioOrVideo} ? 'Abspielen / Öffnen' : 'Entschlüsseln'"></span>
                                 </a>
                             </li>
                         </ul>

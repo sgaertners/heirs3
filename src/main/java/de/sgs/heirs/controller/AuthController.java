@@ -219,30 +219,27 @@ public class AuthController {
                                                         @RequestParam("filename") String filename,
                                                         Authentication authentication) {
         String currentUser = authentication.getName();
-        log.info("File download requested: heir={}, filename={}, user={}", heir, filename, currentUser);
 
-        // Sicherheitscheck: Nur der Erblasser selbst oder der berechtigte Erbe dürfen abrufen
         if (!currentUser.equalsIgnoreCase(erblasser) && !currentUser.equalsIgnoreCase(heir)) {
             return ResponseEntity.status(403).build();
         }
 
         try {
-            // 1. Datei mit dem Erblasser-Key entschlüsseln
-            byte[] decryptedData = fileService.decryptFile(erblasser, heir, filename);
+            // Nutzt die neue Methode (entschlüsselt Dokumente, streamt Audio/Video direkt)
+            byte[] fileData = fileService.loadFileContent(erblasser, heir, filename);
 
-            // 2. MIME-Type ermitteln
             String mimeType = java.nio.file.Files.probeContentType(java.nio.file.Paths.get(filename));
             if (mimeType == null) mimeType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
 
-            currentUser = authentication.getName();
-            // Loggt den Abruf beim abrufenden Benutzer:
-            auditService.log(currentUser, "FILE_DECRYPT_READ",
+            // Audit-Logging
+            boolean isMedia = fileService.isAudioOrVideo(filename, mimeType);
+            auditService.log(currentUser, isMedia ? "FILE_MEDIA_STREAM" : "FILE_DECRYPT_READ",
                     String.format("erblasser=%s; heir=%s; filename=%s", erblasser, heir, filename));
 
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType(mimeType))
                     .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
-                    .body(decryptedData);
+                    .body(fileData);
 
         } catch (Exception e) {
             return ResponseEntity.status(500).build();

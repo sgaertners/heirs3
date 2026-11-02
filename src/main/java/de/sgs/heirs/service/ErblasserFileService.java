@@ -26,8 +26,19 @@ public class ErblasserFileService {
     private static final int GCM_TAG_LENGTH = 128;
 
     /**
-     * Leitet für den Erblasser einen deterministischen AES-256 Schlüssel ab
+     * Prüft anhand von Dateiendung oder Content-Type, ob es sich um Audio oder Video handelt
      */
+    public boolean isAudioOrVideo(String filename, String contentType) {
+        if (contentType != null) {
+            String lowerType = contentType.toLowerCase();
+            if (lowerType.startsWith("audio/") || lowerType.startsWith("video/")) {
+                return true;
+            }
+        }
+        String lowerName = filename.toLowerCase();
+        return lowerName.matches(".*\\.(mp3|wav|ogg|m4a|flac|aac|wma|mp4|webm|mkv|avi|mov|wmv|flv|m4v)");
+    }
+
     private SecretKey deriveErblasserKey(String erblasserUsername) throws Exception {
         byte[] masterPrivBytes = Files.readAllBytes(Paths.get("master_private.key"));
         Mac hmac = Mac.getInstance("HmacSHA256");
@@ -37,48 +48,85 @@ public class ErblasserFileService {
     }
 
     /**
-     * Verschlüsselt die Datei und speichert sie unter /data/<erblasser>/<erbe>/<dateiname>
-     * Aktualisiert die CSV im Erblasser-Ordner
+     * Speichert eine Datei.
+     * Audio- und Videodateien werden UNVERSCHLÜSSELT gespeichert.
+     * Alle anderen Dateien werden mit AES-256-GCM verschlüsselt.
      */
     public synchronized void saveEncryptedFile(String erblasser, String heir, String category, MultipartFile multipartFile) throws Exception {
         String cleanFilename = Paths.get(multipartFile.getOriginalFilename()).getFileName().toString();
 
-        // 1. Verzeichnisse erzeugen
         Path erblasserDir = Paths.get(BASE_DATA_DIR, erblasser);
         Path targetDir = erblasserDir.resolve(heir);
         Files.createDirectories(targetDir);
 
         Path targetFile = targetDir.resolve(cleanFilename);
 
-        // 2. Dateiinhalt mit dem Schlüssel des Erblassers verschlüsseln (AES-GCM)
-        SecretKey erblasserKey = deriveErblasserKey(erblasser);
-        byte[] iv = new byte[GCM_IV_LENGTH];
-        new SecureRandom().nextBytes(iv);
+        boolean isMedia = isAudioOrVideo(cleanFilename, multipartFile.getContentType());
 
-        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
-        cipher.init(Cipher.ENCRYPT_MODE, erblasserKey, new GCMParameterSpec(GCM_TAG_LENGTH, iv));
-        byte[] cipherBytes = cipher.doFinal(multipartFile.getBytes());
+        if (isMedia) {
+            // Audio/Video: Direkte unverschlüsselte Speicherung
+            Files.write(targetFile, multipartFile.getBytes());
+        } else {
+            // Andere Dokumente: AES-256-GCM Verschlüsselung
+            SecretKey erblasserKey = deriveErblasserKey(erblasser);
+            byte[] iv = new byte[GCM_IV_LENGTH];
+            new SecureRandom().nextBytes(iv);
 
-        // [12 Bytes IV] + [Ciphertext + Tag]
-        ByteBuffer buffer = ByteBuffer.allocate(iv.length + cipherBytes.length);
-        buffer.put(iv);
-        buffer.put(cipherBytes);
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            cipher.init(Cipher.ENCRYPT_MODE, erblasserKey, new GCMParameterSpec(GCM_TAG_LENGTH, iv));
+            byte[] cipherBytes = cipher.doFinal(multipartFile.getBytes());
 
-        Files.write(targetFile, buffer.array());
+            ByteBuffer buffer = ByteBuffer.allocate(iv.length + cipherBytes.length);
+            buffer.put(iv);
+            buffer.put(cipherBytes);
 
-        // 3. In die CSV-Datei schreiben (Name des Erben;Dateiname;Kategorie)
+            Files.write(targetFile, buffer.array());
+        }
+
+        // CSV-Eintrag aktualisieren
         Path csvFile = erblasserDir.resolve("files.csv");
         String csvLine = String.format("%s;%s;%s%n", heir, cleanFilename, category);
         Files.writeString(csvFile, csvLine, java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND);
     }
 
     /**
-     * Liest die Dateien des Erblassers anhand der CSV aus und ermittelt den MIME-Type
+     * Liest eine Datei.
+     * Wenn Audio/Video -> direktes Auslesen ohne Entschlüsselung.
+     * Wenn anderes Dokument -> Entschlüsselung per AES-GCM.
      */
+    public byte[] loadFileContent(String erblasser, String heir, String filename) throws Exception {
+        Path filePath = Paths.get(BASE_DATA_DIR, erblasser, heir, filename);
+        if (!Files.exists(filePath)) {
+            throw new FileNotFoundException("Datei nicht gefunden: " + filename);
+        }
+
+        String mimeType = Files.probeContentType(filePath);
+
+        // 1. Audio & Video: Direkt unverschlüsselt zurückgeben!
+        if (isAudioOrVideo(filename, mimeType)) {
+            return Files.readAllBytes(filePath);
+        }
+
+        // 2. Andere Dateien: AES-256-GCM Entschlüsselung
+        byte[] fileBytes = Files.readAllBytes(filePath);
+        ByteBuffer buffer = ByteBuffer.wrap(fileBytes);
+
+        byte[] iv = new byte[GCM_IV_LENGTH];
+        buffer.get(iv);
+
+        byte[] cipherText = new byte[buffer.remaining()];
+        buffer.get(cipherText);
+
+        SecretKey erblasserKey = deriveErblasserKey(erblasser);
+        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+        cipher.init(Cipher.DECRYPT_MODE, erblasserKey, new GCMParameterSpec(GCM_TAG_LENGTH, iv));
+
+        return cipher.doFinal(cipherText);
+    }
+
     public List<FileEntry> listFilesForErblasser(String erblasser) {
         List<FileEntry> entries = new ArrayList<>();
         Path csvFile = Paths.get(BASE_DATA_DIR, erblasser, "files.csv");
-
         if (!Files.exists(csvFile)) return entries;
 
         try (BufferedReader reader = Files.newBufferedReader(csvFile)) {
@@ -93,21 +141,15 @@ public class ErblasserFileService {
 
                     Path filePath = Paths.get(BASE_DATA_DIR, erblasser, heir, filename);
                     long size = Files.exists(filePath) ? Files.size(filePath) : 0;
-
-                    // MIME-Type ermitteln
                     String mimeType = Files.probeContentType(filePath);
                     if (mimeType == null) mimeType = "application/octet-stream";
 
-                    java.io.File file = new java.io.File(filePath.toAbsolutePath().toString());
-                    long sizeBytes = file.length();
-
-                    entries.add(new FileEntry(erblasser, heir, filename, category, mimeType, sizeBytes));
+                    entries.add(new FileEntry(erblasser, heir, filename, category, mimeType, size));
                 }
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
-
         return entries;
     }
 
@@ -175,4 +217,5 @@ public class ErblasserFileService {
 
         return entries;
     }
+
 }

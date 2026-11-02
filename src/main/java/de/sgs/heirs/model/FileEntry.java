@@ -24,12 +24,29 @@ public class FileEntry {
     public String getMimeType() { return mimeType; }
     public long getSizeBytes() { return sizeBytes; }
 
+    // In FileEntry.java:
+
     /**
-     * Wählt das passende Icon basierend auf Dateiendung und MIME-Type
+     * Prüft, ob diese Datei Audio oder Video ist
+     */
+    public boolean isAudioOrVideo() {
+        if (mimeType != null && (mimeType.startsWith("audio/") || mimeType.startsWith("video/"))) {
+            return true;
+        }
+        String lower = filename.toLowerCase();
+        return lower.matches(".*\\.(mp3|wav|ogg|m4a|flac|aac|wma|mp4|webm|mkv|avi|mov|wmv)");
+    }
+
+    /**
+     * Wählt das passende Icon passend zum Dateityp
      */
     public String getIconClass() {
         String lowerName = filename.toLowerCase();
-        if (mimeType != null && mimeType.contains("pdf") || lowerName.endsWith(".pdf")) {
+        if (mimeType != null && mimeType.startsWith("video/") || lowerName.matches(".*\\.(mp4|webm|mkv|mov|avi)")) {
+            return "bi-film text-danger"; // Video Icon
+        } else if (mimeType != null && mimeType.startsWith("audio/") || lowerName.matches(".*\\.(mp3|wav|ogg|m4a|flac)")) {
+            return "bi-file-earmark-music-fill text-warning"; // Audio Icon
+        } else if (mimeType != null && mimeType.contains("pdf") || lowerName.endsWith(".pdf")) {
             return "bi-file-earmark-pdf-fill text-danger";
         } else if (mimeType != null && mimeType.startsWith("image/") || lowerName.matches(".*\\.(png|jpg|jpeg|webp|gif)")) {
             return "bi-file-earmark-image-fill text-primary";
@@ -38,10 +55,9 @@ public class FileEntry {
         } else if (lowerName.matches(".*\\.(xls|xlsx|ods|csv)")) {
             return "bi-file-earmark-excel-fill text-success";
         } else if (lowerName.matches(".*\\.(zip|tar|gz|7z|rar)")) {
-            return "bi-file-earmark-zip-fill text-warning";
-        } else if (lowerName.matches(".*\\.(txt|rtf|md)")) {
-            return "bi-file-earmark-text-fill text-secondary";
+            return "bi-file-earmark-zip-fill text-secondary";
         }
         return "bi-file-earmark-lock-fill text-secondary";
     }
+
 }
