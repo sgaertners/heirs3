@@ -261,6 +261,7 @@ public class EncryptedUserCsvService {
                         case "active" -> record.setActive(!record.isActive());
                         case "erblasser" -> record.setErblasser(!record.isErblasser());
                         case "verstorben" -> record.setVerstorben(!record.isVerstorben());
+                        case "verwalter" -> record.setVerwalter(!record.isVerwalter());
                     }
                     updated = true;
                 }
@@ -282,34 +283,36 @@ public class EncryptedUserCsvService {
     // =========================================================================
     private EncryptedUserCsvRecord encryptUser(UserAccount user) {
         EncryptedUserCsvRecord enc = new EncryptedUserCsvRecord();
-        // 1. Unverschlüsselte Spalten
         enc.setUsername(user.getUsername());
         enc.setActive(user.isActive());
         enc.setErblasser(user.isErblasser());
         enc.setVerstorben(user.isVerstorben());
+        enc.setVerwalter(user.isVerwalter());
+        enc.setErbeVon(user.getErbeVon() != null ? user.getErbeVon() : "");
+        enc.setVerwalterUsername(user.getVerwalterUsername() != null ? user.getVerwalterUsername() : "");
+        enc.setTodesdatum(user.getTodesdatum() != null ? user.getTodesdatum().toString() : "");
 
-        // 2. Mit AES-256-GCM verschlüsselte Spalten
         enc.setEncFullName(encrypt(user.getFullName()));
         enc.setEncStreet(encrypt(user.getStreet()));
         enc.setEncZipCode(encrypt(user.getZipCode()));
         enc.setEncCity(encrypt(user.getCity()));
         enc.setEncValidUntil(encrypt(user.getValidUntil() != null ? user.getValidUntil().toString() : ""));
-
-        // In encryptUser(...) ergänzen:
-        enc.setErbeVon(user.getErbeVon() != null ? user.getErbeVon() : "");
-
         return enc;
     }
 
     private UserAccount decryptUser(EncryptedUserCsvRecord enc) {
         UserAccount user = new UserAccount();
-        // 1. Unverschlüsselt übernehmen
         user.setUsername(enc.getUsername());
         user.setActive(enc.isActive());
         user.setErblasser(enc.isErblasser());
         user.setVerstorben(enc.isVerstorben());
+        user.setVerwalter(enc.isVerwalter());
+        user.setErbeVon(enc.getErbeVon());
+        user.setVerwalterUsername(enc.getVerwalterUsername());
+        if (enc.getTodesdatum() != null && !enc.getTodesdatum().isBlank()) {
+            user.setTodesdatum(LocalDate.parse(enc.getTodesdatum()));
+        }
 
-        // 2. Entschlüsseln
         user.setFullName(decrypt(enc.getEncFullName()));
         user.setStreet(decrypt(enc.getEncStreet()));
         user.setZipCode(decrypt(enc.getEncZipCode()));
@@ -318,10 +321,6 @@ public class EncryptedUserCsvService {
         if (validStr != null && !validStr.isBlank()) {
             user.setValidUntil(LocalDate.parse(validStr));
         }
-
-        // In decryptUser(...) ergänzen:
-        user.setErbeVon(enc.getErbeVon());
-
         return user;
     }
 
@@ -436,6 +435,7 @@ public class EncryptedUserCsvService {
                     record.setActive(updatedUser.isActive());
                     record.setErblasser(updatedUser.isErblasser());
                     record.setVerstorben(updatedUser.isVerstorben());
+                    record.setVerwalter(updatedUser.isVerwalter());
                     if (updatedUser.getErbeVon() != null) {
                         record.setErbeVon(updatedUser.getErbeVon());
                     }
@@ -462,6 +462,71 @@ public class EncryptedUserCsvService {
         }
 
         return found;
+    }
+
+    /**
+     * Verwalter einem Erblasser zuordnen (mit Kollisionsprüfung: Verwalter darf nicht Erbe sein!)
+     */
+    public synchronized boolean assignVerwalter(String erblasserUsername, String verwalterUsername) throws IOException {
+        Path sourcePath = Paths.get(CSV_FILE_PATH);
+        if (!Files.exists(sourcePath)) return false;
+
+        Path tempPath = Paths.get(CSV_FILE_PATH + ".tmp");
+        boolean updated = false;
+
+        try (Reader reader = Files.newBufferedReader(sourcePath);
+             MappingIterator<EncryptedUserCsvRecord> it = csvMapper.readerFor(EncryptedUserCsvRecord.class).with(readSchema).readValues(reader);
+             OutputStream os = Files.newOutputStream(tempPath);
+             SequenceWriter writer = csvMapper.writer(writeSchema).writeValues(os)) {
+
+            while (it.hasNext()) {
+                EncryptedUserCsvRecord record = it.next();
+                if (record.getUsername() != null && record.getUsername().equalsIgnoreCase(erblasserUsername.trim())) {
+                    record.setVerwalterUsername(verwalterUsername != null ? verwalterUsername.trim() : "");
+                    updated = true;
+                }
+                writer.write(record);
+            }
+        }
+        if (updated) {
+            Files.move(tempPath, sourcePath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+        } else {
+            Files.deleteIfExists(tempPath);
+        }
+        return updated;
+    }
+
+    /**
+     * Feststellen des Todesfalls durch den Verwalter
+     */
+    public synchronized boolean declareDeceased(String erblasserUsername, LocalDate todesdatum) throws IOException {
+        Path sourcePath = Paths.get(CSV_FILE_PATH);
+        if (!Files.exists(sourcePath)) return false;
+
+        Path tempPath = Paths.get(CSV_FILE_PATH + ".tmp");
+        boolean updated = false;
+
+        try (Reader reader = Files.newBufferedReader(sourcePath);
+             MappingIterator<EncryptedUserCsvRecord> it = csvMapper.readerFor(EncryptedUserCsvRecord.class).with(readSchema).readValues(reader);
+             OutputStream os = Files.newOutputStream(tempPath);
+             SequenceWriter writer = csvMapper.writer(writeSchema).writeValues(os)) {
+
+            while (it.hasNext()) {
+                EncryptedUserCsvRecord record = it.next();
+                if (record.getUsername() != null && record.getUsername().equalsIgnoreCase(erblasserUsername.trim())) {
+                    record.setVerstorben(true);
+                    record.setTodesdatum(todesdatum.toString());
+                    updated = true;
+                }
+                writer.write(record);
+            }
+        }
+        if (updated) {
+            Files.move(tempPath, sourcePath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+        } else {
+            Files.deleteIfExists(tempPath);
+        }
+        return updated;
     }
 
 }

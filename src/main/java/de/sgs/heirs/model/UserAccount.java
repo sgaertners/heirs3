@@ -18,6 +18,11 @@ public class UserAccount {
 
     private String erbeVon; // Speichert den Benutzernamen des Erblassers
 
+    private boolean verwalter = false;         // Ist dieser User ein Notar/Erbschaftsverwalter?
+    private String verwalterUsername;          // Welcher Verwalter betreut diesen Erblasser?
+    private LocalDate todesdatum;              // Vom Verwalter eingetragenes Sterbedatum
+
+
     public UserAccount() {}
 
     public UserAccount(String username, String fullName, String street, String zipCode, String city, LocalDate validUntil) {
@@ -62,4 +67,14 @@ public class UserAccount {
 
     public String getErbeVon() { return erbeVon; }
     public void setErbeVon(String erbeVon) { this.erbeVon = erbeVon; }
+
+    // Getter und Setter
+    public boolean isVerwalter() { return verwalter; }
+    public void setVerwalter(boolean verwalter) { this.verwalter = verwalter; }
+
+    public String getVerwalterUsername() { return verwalterUsername; }
+    public void setVerwalterUsername(String verwalterUsername) { this.verwalterUsername = verwalterUsername; }
+
+    public LocalDate getTodesdatum() { return todesdatum; }
+    public void setTodesdatum(LocalDate todesdatum) { this.todesdatum = todesdatum; }
 }

@@ -5,10 +5,11 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonPropertyOrder({
-        "username", "active", "erblasser", "verstorben", "erbeVon",
-        "encFullName", "encStreet", "encZipCode", "encCity", "encValidUntil"
+        "username", "active", "erblasser", "verstorben", "verwalter", "erbeVon", "verwalterUsername",
+        "todesdatum", "encFullName", "encStreet", "encZipCode", "encCity", "encValidUntil"
 })
 public class EncryptedUserCsvRecord {
 
@@ -19,28 +20,44 @@ public class EncryptedUserCsvRecord {
     private boolean active = true;
 
     @JsonProperty("erblasser")
-    private boolean erblasser = false; // <-- Explizit annotiert
+    private boolean erblasser = false;
 
     @JsonProperty("verstorben")
     private boolean verstorben = false;
 
+    @JsonProperty("verwalter")
+    private boolean verwalter = false;
+
     @JsonProperty("erbeVon")
     private String erbeVon = "";
 
+    @JsonProperty("verwalterUsername")
+    private String verwalterUsername = "";
+
+    @JsonProperty("todesdatum")
+    private String todesdatum = "";
+
+    // Verschlüsselt
     @JsonProperty("encFullName")
     private String encFullName;
-
     @JsonProperty("encStreet")
     private String encStreet;
-
     @JsonProperty("encZipCode")
     private String encZipCode;
-
     @JsonProperty("encCity")
     private String encCity;
-
     @JsonProperty("encValidUntil")
     private String encValidUntil;
+
+    // Getter & Setter für die neuen Felder:
+    public boolean isVerwalter() { return verwalter; }
+    public void setVerwalter(boolean verwalter) { this.verwalter = verwalter; }
+
+    public String getVerwalterUsername() { return verwalterUsername; }
+    public void setVerwalterUsername(String verwalterUsername) { this.verwalterUsername = verwalterUsername; }
+
+    public String getTodesdatum() { return todesdatum; }
+    public void setTodesdatum(String todesdatum) { this.todesdatum = todesdatum; }
 
 
     public EncryptedUserCsvRecord() {}

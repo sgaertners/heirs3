@@ -90,6 +90,7 @@
                         <th>Erbe von</th>
                         <th class="text-center">Aktiv</th>
                         <th class="text-center">Erblasser</th>
+                        <th class="text-center">Verwalter</th>
                         <th class="text-center">Verstorben</th>
                         <th>Gültig bis</th>
                         <th class="text-end pe-4">Aktionen</th>
@@ -97,7 +98,7 @@
                     </thead>
                     <tbody>
                     <tr th:if="${users == null or users.isEmpty()}">
-                        <td colspan="8" class="text-center py-5 text-secondary">
+                        <td colspan="9" class="text-center py-5 text-secondary">
                             Keine registrierten Benutzer vorhanden.
                         </td>
                     </tr>
@@ -170,6 +171,18 @@
                                 <button type="submit" class="btn btn-toggle border"
                                         th:classappend="${u.erblasser} ? 'btn-primary text-white' : 'btn-outline-secondary text-secondary'">
                                     <span th:text="${u.erblasser} ? 'Ja' : 'Nein'"></span>
+                                </button>
+                            </form>
+                        </td>
+
+                        <!-- Status: Verwalter Toggle -->
+                        <td class="text-center">
+                            <form th:action="@{/admin/users/toggle}" method="post" class="d-inline">
+                                <input type="hidden" name="username" th:value="${u.username}"/>
+                                <input type="hidden" name="field" value="verwalter"/>
+                                <button type="submit" class="btn btn-toggle border"
+                                        th:classappend="${u.verwalter} ? 'btn-warning text-dark' : 'btn-outline-secondary text-secondary'">
+                                    <span th:text="${u.verwalter} ? 'Ja' : 'Nein'"></span>
                                 </button>
                             </form>
                         </td>

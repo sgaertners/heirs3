@@ -125,10 +125,17 @@
                                    th:checked="${user.erblasser}">
                             <label class="form-check-label text-white small" for="erblasser">Benutzer ist <strong>Erblasser</strong></label>
                         </div>
-                        <div class="form-check form-switch">
+                        <div class="form-check form-switch mb-2">
                             <input class="form-check-input" type="checkbox" id="verstorben" name="verstorben" value="true"
                                    th:checked="${user.verstorben}">
                             <label class="form-check-label text-white small" for="verstorben">Benutzer ist <strong>Verstorben</strong></label>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="verwalter" name="verwalter" value="true"
+                                   th:checked="${user.verwalter}">
+                            <label class="form-check-label text-white small" for="verwalter">
+                                <i class="bi bi-award me-1 text-warning"></i>Benutzer ist <strong>Erbschaftsverwalter / Notar</strong>
+                            </label>
                         </div>
                     </div>
 

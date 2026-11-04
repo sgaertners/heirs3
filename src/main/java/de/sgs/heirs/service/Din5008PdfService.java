@@ -131,7 +131,7 @@ public class Din5008PdfService {
                 // QR-Code einfügen
                 PDImageXObject pdQrImage = LosslessFactory.createFromImage(document, qrImage);
                 float qrSizePt = 50 * MM_TO_PT;
-                float qrY = pageHeight - (215 * MM_TO_PT);
+                float qrY = pageHeight - (225 * MM_TO_PT);
                 cs.drawImage(pdQrImage, leftMargin, qrY, qrSizePt, qrSizePt);
 
                 // --- 7. GRUSSFORMEL ---
@@ -161,5 +161,109 @@ public class Din5008PdfService {
         // Entfernt alles, was kein Buchstabe und kein Unterstrich ist
         String cleaned = rawUsername.replaceAll("[^a-zA-Z_0-9]", "");
         return cleaned.isBlank() ? "benutzer" : cleaned;
+    }
+
+
+    // In Din5008PdfService.java folgende Methode ergänzen:
+
+    public File createVerwalterLetterPdf(String username, String fullName, String street, String zipCode, String city,
+                                         LocalDate validUntil, BufferedImage qrImage) throws IOException {
+        String safeFilename = sanitizeFilename(username) + ".pdf";
+        Path dirPath = Paths.get(OUTPUT_DIR);
+//        if (!Files.exists(dirPath)) Files.createDirectories(dirPath);
+        File targetFile = dirPath.resolve(safeFilename).toFile();
+
+        try (PDDocument document = new PDDocument()) {
+            PDPage page = new PDPage(PDRectangle.A4);
+            document.addPage(page);
+
+            PDType1Font fontRegular = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
+            PDType1Font fontBold = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
+
+            try (PDPageContentStream cs = new PDPageContentStream(document, page)) {
+                float pageHeight = page.getMediaBox().getHeight();
+                float leftMargin = 25 * MM_TO_PT;
+
+                // 1. Absender
+                cs.beginText();
+                cs.setFont(fontRegular, 7);
+                cs.newLineAtOffset(leftMargin, pageHeight - (45 * MM_TO_PT));
+                cs.showText(senderInfo.getAbsender());
+                cs.endText();
+
+                // 2. Empfänger (Notar/Verwalter)
+                String recipientName = (fullName != null && !fullName.isBlank()) ? fullName : username;
+                String recipientStreet = (street != null && !street.isBlank()) ? street : "Kanzleiadresse";
+                String recipientLocation = ((zipCode != null ? zipCode : "") + " " + (city != null ? city : "")).trim();
+
+                cs.beginText();
+                cs.setFont(fontRegular, 10);
+                cs.setLeading(14);
+                cs.newLineAtOffset(leftMargin, pageHeight - (55 * MM_TO_PT));
+                cs.showText("Herrn/Frau Notar(in) / Erbschaftsverwalter(in)");
+                cs.newLine();
+                cs.showText(recipientName);
+                cs.newLine();
+                cs.showText(recipientStreet);
+                cs.newLine();
+                cs.showText(recipientLocation);
+                cs.endText();
+
+                // 3. Datum
+                cs.beginText();
+                cs.setFont(fontRegular, 10);
+                cs.newLineAtOffset(145 * MM_TO_PT, pageHeight - (85 * MM_TO_PT));
+                cs.showText(senderInfo.getDatumszeile(LocalDate.now()));
+                cs.endText();
+
+                // 4. Betreff
+                cs.beginText();
+                cs.setFont(fontBold, 12);
+                cs.newLineAtOffset(leftMargin, pageHeight - (103.5f * MM_TO_PT));
+                cs.showText("Bestallungsurkunde & Notar-Zugangsausweis (SUPERUSER)");
+                cs.endText();
+
+                // 5. Brieftext
+                DateTimeFormatter germanDate = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+                cs.beginText();
+                cs.setFont(fontRegular, 10);
+                cs.setLeading(15);
+                cs.newLineAtOffset(leftMargin, pageHeight - (120 * MM_TO_PT));
+                cs.showText("Sehr geehrte(r) " + recipientName + ",");
+                cs.newLine();
+                cs.newLine();
+                cs.showText("Sie wurden im System als Erbschaftsverwalter / Notar registriert (Kennung: " + username + ").");
+                cs.newLine();
+                cs.showText("Mit dem untenstehenden kryptografischen Ed25519-Ausweis erhalten Sie Zugang zur Verwalter-Konsole.");
+                cs.newLine();
+                cs.showText("In dieser Konsole sind Sie legitimiert, für Ihnen anvertraute Erblasser den Eintritt");
+                cs.newLine();
+                cs.showText("des Todesfalls verbindlich mit Datum festzustellen. Dieser Ausweis ist gültig bis: " + validUntil.format(germanDate));
+                cs.newLine();
+                cs.newLine();
+                cs.showText("Bitte verwahren Sie diesen Bestallungsausweis in Ihren vertraulichen Kanzleiakten.");
+                cs.endText();
+
+                // 6. QR-Code
+                PDImageXObject pdQrImage = LosslessFactory.createFromImage(document, qrImage);
+                float qrSizePt = 50 * MM_TO_PT;
+                float qrY = pageHeight - (215 * MM_TO_PT);
+                cs.drawImage(pdQrImage, leftMargin, qrY, qrSizePt, qrSizePt);
+
+                // 7. Grußformel
+                cs.beginText();
+                cs.setFont(fontRegular, 10);
+                cs.setLeading(14);
+                cs.newLineAtOffset(leftMargin, qrY - (20 * MM_TO_PT));
+                cs.showText("Mit kollegialen Grüßen");
+                cs.newLine();
+                cs.newLine();
+                cs.setFont(fontBold, 10);
+                cs.showText("Zentrales Nachlassregister");
+                cs.endText();
+            }
+            document.save(targetFile);
+        }
+        return targetFile;
     }
 }

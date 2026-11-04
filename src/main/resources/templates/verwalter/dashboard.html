@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notar-Konsole - SGS HEIRS</title>
+
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/font/bootstrap-icons.css}">
+
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            min-height: 100vh;
+            color: #f8fafc;
+            display: flex;
+            flex-direction: column;
+        }
+        .main-content { flex: 1; }
+        .card-notar {
+            border: 1px solid #4338ca;
+            background-color: #1e1b4b;
+            border-radius: 1rem;
+        }
+        .table-notar {
+            --bs-table-bg: #1e1b4b;
+            --bs-table-border-color: #312e81;
+        }
+    </style>
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<main class="main-content container py-4">
+
+    <!-- Header-Banner -->
+    <div class="p-4 p-md-5 mb-4 rounded-4 shadow-lg border border-indigo card-notar">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold mb-2">
+                    <i class="bi bi-award-fill me-1"></i>ERBSCHAFTSVERWALTER / NOTAR (SUPERUSER)
+                </span>
+                <h1 class="display-6 fw-bold text-white mb-1">Nachlass-Beurkundung</h1>
+                <p class="text-secondary mb-0">Angemeldet als Verwalter: <strong class="text-light" th:text="${username}"></strong></p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <form th:action="@{/logout}" method="post">
+                    <button type="submit" class="btn btn-outline-danger shadow-sm">
+                        <i class="bi bi-box-arrow-right me-1"></i>Sicher abmelden
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feedback Meldungen -->
+    <div th:if="${success}" class="alert alert-success alert-dismissible fade show small" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i><span th:text="${success}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show small" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i><span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Tabelle der anvertrauten Erblasser -->
+    <div class="card card-notar shadow-lg overflow-hidden">
+        <div class="card-header bg-dark bg-opacity-50 py-3 border-bottom border-indigo">
+            <h5 class="card-title text-white mb-0 fw-bold">
+                <i class="bi bi-people-fill text-warning me-2"></i>Ihnen anvertraute Erblasser
+            </h5>
+            <small class="text-secondary">Sie sind ausschließlich berechtigt, den Eintritt des Todesfalls verbindlich festzustellen.</small>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-notar table-dark align-middle mb-0" style="font-size: 0.9rem;">
+                    <thead class="text-secondary border-bottom border-indigo">
+                    <tr>
+                        <th class="ps-4">Erblasser-Kennung</th>
+                        <th>Vollständiger Name</th>
+                        <th>Wohnort</th>
+                        <th class="text-center">Status</th>
+                        <th>Sterbedatum</th>
+                        <th class="text-end pe-4">Amtliche Feststellung</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:if="${erblasserList == null or erblasserList.isEmpty()}">
+                        <td colspan="6" class="text-center py-5 text-secondary">
+                            <i class="bi bi-folder-x fs-2 d-block mb-2"></i>
+                            Ihnen sind aktuell keine Erblasser zur Verwaltung zugewiesen.
+                        </td>
+                    </tr>
+
+                    <tr th:each="e : ${erblasserList}">
+                        <td class="ps-4 fw-bold font-monospace text-light">
+                            <i class="bi bi-person-badge text-warning me-1"></i>
+                            <span th:text="${e.username}"></span>
+                        </td>
+                        <td class="text-light" th:text="${e.fullName != null ? e.fullName : '-'}"></td>
+                        <td class="text-secondary" th:text="${(e.zipCode != null ? e.zipCode : '') + ' ' + (e.city != null ? e.city : '')}"></td>
+
+                        <!-- Status -->
+                        <td class="text-center">
+                                <span th:if="${e.verstorben}" class="badge bg-danger px-2 py-1">
+                                    <i class="bi bi-heartbreak-fill me-1"></i>Verstorben
+                                </span>
+                            <span th:unless="${e.verstorben}" class="badge bg-success px-2 py-1">
+                                    <i class="bi bi-heart-pulse-fill me-1"></i>Lebend
+                                </span>
+                        </td>
+
+                        <!-- Sterbedatum -->
+                        <td>
+                                <span th:if="${e.todesdatum != null}"
+                                      class="font-monospace text-warning fw-bold"
+                                      th:text="${#temporals.format(e.todesdatum, 'dd.MM.yyyy')}"></span>
+                            <span th:unless="${e.todesdatum != null}" class="text-secondary">-</span>
+                        </td>
+
+                        <!-- Beurkundungs-Formular -->
+                        <td class="text-end pe-4">
+                            <!-- Fall 1: Bereits als verstorben beurkundet -->
+                            <span th:if="${e.verstorben}" class="text-muted small">
+                                    <i class="bi bi-check-all text-success me-1"></i>Beurkundung abgeschlossen
+                                </span>
+
+                            <!-- Fall 2: Lebend -> Formular zur Feststellung -->
+                            <form th:unless="${e.verstorben}" th:action="@{/verwalter/declare-deceased}" method="post"
+                                  class="d-inline-flex gap-2 align-items-center"
+                                  onsubmit="return confirm('Möchten Sie den Tod dieses Erblassers unwiderruflich beurkunden?');">
+                                <input type="hidden" name="erblasser" th:value="${e.username}"/>
+                                <input type="date" class="form-control form-control-sm bg-dark text-white border-secondary"
+                                       name="todesdatum" th:max="${today}" th:value="${today}" required style="width: 140px;">
+                                <button type="submit" class="btn btn-danger btn-sm text-nowrap shadow-sm">
+                                    <i class="bi bi-file-earmark-check me-1"></i>Tod beurkunden
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<footer class="py-3 text-center text-secondary small border-top border-secondary border-opacity-25">
+    <div class="container">&copy; 2026 SGS HEIRS • Amtliche Notar- & Verwalterkonsole</div>
+</footer>
+
+<script th:src="@{/webjars/bootstrap/js/bootstrap.bundle.min.js}" defer></script>
+</body>
+</html>

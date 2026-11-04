@@ -16,6 +16,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -31,6 +32,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -185,13 +187,22 @@ public class AuthController {
                 return "redirect:/user-dashboard?error=invalid_signature";
             }
 
+            Optional<UserAccount> userOpt = csvService.findByUsername(username);
+            if (userOpt.isPresent() && !userOpt.get().isActive()) return "redirect:/master?error=inactive";
+
             // 3. Authentifizierung erfolgreich -> Login-Session setzen
-            Authentication auth = new UsernamePasswordAuthenticationToken(
-                    username, null, List.of(new SimpleGrantedAuthority("ROLE_USER"))
-            );
+            // Rolle bestimmen: Ist der User Verwalter?
+            boolean isVerwalter = userOpt.map(UserAccount::isVerwalter).orElse(false);
+            List<GrantedAuthority> authorities = new ArrayList<>();
+            authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
+            if (isVerwalter) {
+                authorities.add(new SimpleGrantedAuthority("ROLE_VERWALTER"));
+            }
+
+            Authentication auth = new UsernamePasswordAuthenticationToken(username, null, authorities);
 
             // In AuthController.java vor dem Setzen des SecurityContext:
-            Optional<UserAccount> userOpt = csvService.findByUsername(username);
+//            Optional<UserAccount> userOpt = csvService.findByUsername(username);
             if (userOpt.isPresent() && !userOpt.get().isActive()) {
                 return "redirect:/login?error=inactive"; // Inaktive Nutzer abweisen
             }
@@ -202,7 +213,12 @@ public class AuthController {
             securityContextRepository.saveContext(context, request, response);
 
             auditService.log(username, "LOGIN_QR", "status=SUCCESS; validUntil=" + validUntil);
+            auditService.log(username, "LOGIN_QR", "isVerwalter=" + isVerwalter);
 
+            // Verwalter direkt zu seiner Spezialkonsole weiterleiten!
+            if (isVerwalter) {
+                return "redirect:/verwalter/dashboard";
+            }
             return "redirect:/dashboard";
 
         } catch (Exception e) {

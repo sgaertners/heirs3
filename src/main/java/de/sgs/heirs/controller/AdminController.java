@@ -4,7 +4,8 @@ package de.sgs.heirs.controller;
 import de.sgs.heirs.model.UserAccount;
 import de.sgs.heirs.service.*;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -25,10 +26,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-@Slf4j
 @Controller
 @RequestMapping("/admin")
 public class AdminController {
+
+    private static final Logger log = LoggerFactory.getLogger(AdminController.class);
 
     private final ServerMasterKeyService masterKeyService;
     private final QrCodeService qrCodeService;
@@ -68,7 +70,8 @@ public class AdminController {
                                           @RequestParam(value = "zipCode", required = false) String zipCode,
                                           @RequestParam(value = "city", required = false) String city,
                                           @RequestParam(value = "validYears", defaultValue = "1") int validYears,
-                                          @RequestParam(value = "erblasser", defaultValue = "false") boolean erblasser, // <-- NEU
+                                          @RequestParam(value = "erblasser", defaultValue = "false") boolean erblasser,
+                                          @RequestParam(value = "verwalter", defaultValue = "false") boolean verwalter,
                                           HttpServletRequest request,
                                           Model model) {
 
@@ -83,12 +86,13 @@ public class AdminController {
         LocalDate validUntil = LocalDate.now().plusYears(validYears);
 
         auditService.log(sanitizedUsername, "ACCOUNT_CREATED",
-                String.format("by=admin; erblasser=%b; validUntil=%s", erblasser, validUntil));
+                String.format("by=admin; erblasser=%b; verwalter=%b; validUntil=%s", erblasser, verwalter, validUntil));
 
         try {
             // 1. In die verschlüsselte CSV streamen
             UserAccount account = new UserAccount(sanitizedUsername, fullName, street, zipCode, city, validUntil);
             account.setErblasser(erblasser); // <-- Status setzen!
+            account.setVerwalter(verwalter);
             csvService.saveUser(account);
 
             // 2. Signatur & Login-URL erstellen
@@ -99,7 +103,13 @@ public class AdminController {
 
             // 3. QR-Code & DIN 5008 Brief generieren
             BufferedImage qrImage = qrCodeService.generateQrBufferedImage(loginUrl, 300, 300);
-            File pdfFile = pdfService.createLetterPdf(sanitizedUsername, fullName, street, zipCode, city, erbeVon, validUntil, qrImage);
+            File pdfFile = null;
+
+            if (account.isVerwalter()) {
+                pdfFile = pdfService.createVerwalterLetterPdf(sanitizedUsername, fullName, street, zipCode, city, validUntil, qrImage);
+            } else {
+                pdfFile = pdfService.createLetterPdf(sanitizedUsername, fullName, street, zipCode, city, erbeVon, validUntil, qrImage);
+            }
 
             String qrImageBase64 = qrCodeService.generateQrCodeBase64(loginUrl, 300, 300);
             model.addAttribute("username", sanitizedUsername);
@@ -234,6 +244,7 @@ public class AdminController {
                                   @RequestParam(value = "active", defaultValue = "false") boolean active,
                                   @RequestParam(value = "erblasser", defaultValue = "false") boolean erblasser,
                                   @RequestParam(value = "verstorben", defaultValue = "false") boolean verstorben,
+                                  @RequestParam(value = "verwalter", defaultValue = "false") boolean verwalter,
                                   HttpServletRequest request,
                                   RedirectAttributes redirectAttributes) {
         try {
@@ -244,7 +255,7 @@ public class AdminController {
                 return "redirect:/admin/users";
             }
 
-            auditService.log(username, "ACCOUNT_UPDATED", String.format("erblasser=%b", erblasser));
+            auditService.log(username, "ACCOUNT_UPDATED", String.format("erblasser=%b; verwalter=%b", erblasser, verwalter));
 
             UserAccount user = existingOpt.get();
             user.setFullName(fullName);
@@ -255,6 +266,7 @@ public class AdminController {
             user.setActive(active);
             user.setErblasser(erblasser);
             user.setVerstorben(verstorben);
+            user.setVerwalter(verwalter);
 
             // 1. In der verschlüsselten CSV aktualisieren
             csvService.updateUser(user);
@@ -266,7 +278,11 @@ public class AdminController {
             String erbeVon = user.getErbeVon() != null ? user.getErbeVon() : "Erblasser";
 
             BufferedImage qrImage = qrCodeService.generateQrBufferedImage(loginUrl, 300, 300);
-            pdfService.createLetterPdf(username, fullName, street, zipCode, city, erbeVon, validUntil, qrImage);
+            if (user.isVerwalter()) {
+                pdfService.createVerwalterLetterPdf(username, fullName, street, zipCode, city, validUntil, qrImage);
+            } else {
+                pdfService.createLetterPdf(username, fullName, street, zipCode, city, erbeVon, validUntil, qrImage);
+            }
 
             redirectAttributes.addFlashAttribute("success", "Daten für '" + username + "' erfolgreich aktualisiert und Brief neu generiert.");
         } catch (Exception e) {
@@ -309,16 +325,21 @@ public class AdminController {
 
             // 3. QR-Code & DIN 5008 PDF mit aktuellen Daten (und SenderInfo) neu erzeugen
             BufferedImage qrImage = qrCodeService.generateQrBufferedImage(loginUrl, 300, 300);
-            File pdfFile = pdfService.createLetterPdf(
-                    user.getUsername(),
-                    user.getFullName(),
-                    user.getStreet(),
-                    user.getZipCode(),
-                    user.getCity(),
-                    user.getErbeVon(),
-                    validUntil,
-                    qrImage
-            );
+            File pdfFile = null;
+            if (user.isVerwalter()) {
+                pdfFile = pdfService.createVerwalterLetterPdf(username, user.getFullName(), user.getStreet(), user.getZipCode(), user.getCity(), validUntil, qrImage);
+            } else{
+                pdfFile = pdfService.createLetterPdf(
+                        user.getUsername(),
+                        user.getFullName(),
+                        user.getStreet(),
+                        user.getZipCode(),
+                        user.getCity(),
+                        user.getErbeVon(),
+                        validUntil,
+                        qrImage
+                );
+            }
 
             // 4. Audit-Log schreiben
             auditService.log(user.getUsername(), "LETTER_REFRESHED", "pdf=" + pdfFile.getName());
@@ -331,6 +352,30 @@ public class AdminController {
                     "Fehler beim Aktualisieren des Briefs: " + e.getMessage());
         }
 
+        return "redirect:/admin/users";
+    }
+
+
+    @PostMapping("/users/assign-verwalter")
+    public String assignVerwalter(@RequestParam("erblasser") String erblasser,
+                                  @RequestParam(value = "verwalter", required = false) String verwalter,
+                                  RedirectAttributes redirectAttributes) {
+        try {
+            // Prüfen, ob der gewählte Verwalter Erbe dieses Erblassers ist
+            if (verwalter != null && !verwalter.isBlank()) {
+                Optional<UserAccount> verwOpt = csvService.findByUsername(verwalter);
+                if (verwOpt.isPresent() && erblasser.equalsIgnoreCase(verwOpt.get().getErbeVon())) {
+                    redirectAttributes.addFlashAttribute("error",
+                            "Kollision: '" + verwalter + "' ist Erbe von '" + erblasser + "' und darf nicht dessen Verwalter sein!");
+                    return "redirect:/admin/users";
+                }
+            }
+
+            csvService.assignVerwalter(erblasser, verwalter);
+            redirectAttributes.addFlashAttribute("success", "Verwalter für " + erblasser + " aktualisiert.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Fehler: " + e.getMessage());
+        }
         return "redirect:/admin/users";
     }
 
