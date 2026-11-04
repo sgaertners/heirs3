@@ -27,7 +27,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 @Controller
-@RequestMapping("/admin")
+@RequestMapping("/admin")  
 public class AdminController {
 
     private static final Logger log = LoggerFactory.getLogger(AdminController.class);
