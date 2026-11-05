@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 340" width="100%" height="100%">
+    <defs>
+        <!-- Pfeilspitze Definition -->
+        <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+            <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#4a5568" />
+        </marker>
+        <!-- Schatteneffekt -->
+        <filter id="shadow" x="-5%" y="-5%" width="115%" height="115%">
+            <feDropShadow dx="2" dy="4" stdDeviation="4" flood-color="#000000" flood-opacity="0.1" />
+        </filter>
+    </defs>
+
+    <style>
+        .card { rx: 10px; filter: url(#shadow); }
+        .header { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: bold; fill: #ffffff; }
+        .text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 13px; fill: #2d3748; line-height: 1.5; }
+        .bold { font-weight: bold; }
+        .subtext { fill: #4a5568; font-size: 12px; }
+        .arrow { stroke: #4a5568; stroke-width: 2.5; stroke-dasharray: 6,4; marker-end: url(#arrow); fill: none; }
+    </style>
+
+    <!-- ================= BOX 1: ADMINISTRATOR ================= -->
+    <g transform="translate(20, 20)">
+        <rect class="card" width="270" height="290" fill="#ffffff" stroke="#cbd5e0" stroke-width="1.5"/>
+        <path d="M 0 10 Q 0 0 10 0 L 260 0 Q 270 0 270 10 L 270 50 L 0 50 Z" fill="#2b6cb0" />
+        <text class="header" x="135" y="32" text-anchor="middle">👤 Administrator</text>
+
+        <text class="text bold" x="20" y="85">1. User anlegen</text>
+        <text class="text subtext" x="35" y="105">• Erblasser (Kurt)</text>
+        <text class="text subtext" x="35" y="125">• Erbe (Anna)</text>
+
+        <text class="text bold" x="20" y="170">2. Zuordnung herstellen</text>
+        <text class="text subtext" x="35" y="190">• Erblasser dem Erben</text>
+        <text class="text subtext" x="35" y="210">  im System zuweisen</text>
+        <text class="text subtext" x="35" y="235">• DIN-5008-Briefe drucken</text>
+    </g>
+
+    <!-- PFEIL 1 -> 2 -->
+    <path class="arrow" d="M 290 165 L 345 165" />
+
+    <!-- ================= BOX 2: ERBLASSER ================= -->
+    <g transform="translate(355, 20)">
+        <rect class="card" width="270" height="290" fill="#ffffff" stroke="#cbd5e0" stroke-width="1.5"/>
+        <path d="M 0 10 Q 0 0 10 0 L 260 0 Q 270 0 270 10 L 270 50 L 0 50 Z" fill="#2c7a7b" />
+        <text class="header" x="135" y="32" text-anchor="middle">🏛️ Erblasser-Dashboard</text>
+
+        <text class="text bold" x="20" y="85">3. Kontext wählen</text>
+        <text class="text subtext" x="35" y="105">• Erben auswählen (Anna)</text>
+        <text class="text subtext" x="35" y="125">• Kategorie wählen</text>
+
+        <text class="text bold" x="20" y="170">4. Dateien hochladen</text>
+        <text class="text subtext" x="35" y="195">🔒 <tspan class="bold">Dokumente / PDFs:</tspan></text>
+        <text class="text subtext" x="48" y="215">AES-256-GCM verschlüsselt</text>
+        <text class="text subtext" x="35" y="245">▶️ <tspan class="bold">Audio / Video:</tspan></text>
+        <text class="text subtext" x="48" y="265">Unverschlüsselt (Streaming)</text>
+    </g>
+
+    <!-- PFEIL 2 -> 3 -->
+    <path class="arrow" d="M 625 165 L 680 165" />
+
+    <!-- ================= BOX 3: ERBE ================= -->
+    <g transform="translate(690, 20)">
+        <rect class="card" width="270" height="290" fill="#ffffff" stroke="#cbd5e0" stroke-width="1.5"/>
+        <path d="M 0 10 Q 0 0 10 0 L 260 0 Q 270 0 270 10 L 270 50 L 0 50 Z" fill="#2f855a" />
+        <text class="header" x="135" y="32" text-anchor="middle">📱 Erben-Dashboard</text>
+
+        <text class="text bold" x="20" y="85">4. Passwortloser Login</text>
+        <text class="text subtext" x="35" y="105">• Scannt Ed25519-QR-Code</text>
+        <text class="text subtext" x="35" y="125">  aus DIN-5008-Brief</text>
+
+        <text class="text bold" x="20" y="170">5. Nachlass sichten</text>
+        <text class="text subtext" x="35" y="190">• Sortiert nach Kategorien</text>
+
+        <text class="text bold" x="20" y="230">6. Abruf / Entschlüsselung</text>
+        <text class="text subtext" x="35" y="250">• On-the-fly im RAM entschlüsseln</text>
+        <text class="text subtext" x="35" y="270">• Medien sofort abspielen</text>
+    </g>
+</svg>

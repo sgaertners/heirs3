@@ -1,0 +1,17 @@
+= TODOs
+:pdf-page-size: A4
+// :pdf-page-layout: landscape
+:icons: font
+
+// Checkliste mit offenen Aufgaben
+* [ ] *Mehrfach-Zuordnung von Erblassern:* +
+Einen Erben mehreren Erblassern zuordnen können.
+
+* [ ] *Rolle Notar / Erbschaftsverwalter (QR-Code-Zugang):* +
+Einen Zugang per QR-Code für Notare bzw. Erbschaftsverwalter einbauen.
+** Der Verwalter als *SUPERUSER* kann einen Erblasser als verstorben erklären und den entsprechenden Schalter sowie das Todesdatum für alle Erblasser vornehmen, für die er eingetragen ist.
+** *Einschränkung:* Der Verwalter darf selbst kein Erbe vom jeweiligen Erblasser sein.
+** Der Verwalter erhält einen eigenen DIN-5008-Brief mit QR-Code.
+
+* [ ] *ZIP- & Verschlüsselungs-Optimierung:* +
+Testen, ob es möglich ist, Audio- und Video-Dateien zu zippen und für einen Erben auch wieder zu entschlüsseln (ggf. asynchron als Hintergrundprozess).
