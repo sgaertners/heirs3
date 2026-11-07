@@ -6,8 +6,6 @@ import de.sgs.heirs.service.*;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.core.io.Resource;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -21,6 +19,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -146,10 +145,26 @@ public class AdminController {
 
 
     // --- PDF DOWNLOAD / VORSCHAU ---
-    @GetMapping("/download-pdf/{filename}")
-    public ResponseEntity<Resource> downloadPdf(@PathVariable String filename) {
-        log.info("PDF download requested: {}", filename);
+//    @GetMapping("/download-pdf/{filename}")
+//    public ResponseEntity<Resource> downloadPdf(@PathVariable String filename) {
+//        log.info("PDF download requested: {}", filename);
+//
+//        String safeFilename = filename.replaceAll("[^a-zA-Z0-9_\\.]", "");
+//        File file = new File("generated-letters", safeFilename);
+//
+//        if (!file.exists()) {
+//            return ResponseEntity.notFound().build();
+//        }
+//
+//        Resource resource = new FileSystemResource(file);
+//        return ResponseEntity.ok()
+//                .contentType(MediaType.APPLICATION_PDF)
+//                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + safeFilename + "\"")
+//                .body(resource);
+//    }
 
+    @GetMapping("/download-pdf/{filename}")
+    public ResponseEntity<byte[]> downloadPdf(@PathVariable String filename) {
         String safeFilename = filename.replaceAll("[^a-zA-Z0-9_\\.]", "");
         File file = new File("generated-letters", safeFilename);
 
@@ -157,11 +172,23 @@ public class AdminController {
             return ResponseEntity.notFound().build();
         }
 
-        Resource resource = new FileSystemResource(file);
-        return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_PDF)
-                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + safeFilename + "\"")
-                .body(resource);
+        try {
+            // 1. Verschlüsselte Bytes von der Festplatte lesen
+            byte[] encryptedBytes = Files.readAllBytes(file.toPath());
+
+            // 2. Im RAM mit dem Server-Master-Key entschlüsseln
+            byte[] decryptedPdfBytes = masterKeyService.decryptBytes(encryptedBytes);
+
+            // 3. Als vollwertiges PDF im Browser-Tab anzeigen
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + safeFilename + "\"")
+                    .body(decryptedPdfBytes);
+
+        } catch (Exception e) {
+            System.err.println("Fehler beim Entschlüsseln des PDF-Briefs: " + e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     // POST-Route zum Umschalten eines Feldes

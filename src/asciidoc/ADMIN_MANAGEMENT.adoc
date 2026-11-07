@@ -1,0 +1,179 @@
+= 🔐 SGS HEIRS: Administrator-Verwaltung & Lifecycle
+:toc: left
+:toclevels: 3
+:toc-title: Inhaltsverzeichnis
+:pdf-page-size: A4
+:pdf-page-layout: landscape
+:icons: font
+:source-highlighter: rouge
+:sectnums:
+:imagesdir: images
+
+Diese Dokumentation beschreibt die Erstanlage, Verwaltung, Autorisierung und den vollständigen Lebenszyklus von Administrator-Benutzern im System *SGS HEIRS*.
+
+'''
+
+== Architektur- & Sicherheitskonzept
+
+Die Admin-Verwaltung kombiniert drei zentrale Sicherheitsmechanismen:
+
+. *MasterKey-Verschlüsselung (AES-256-GCM):* +
+Administrator-Benutzernamen und Passwörter werden *niemals im Klartext* auf der Festplatte gespeichert. Sie werden mit dem aus dem Server-Masterkey (`master_private.key`) abgeleiteten 256-Bit AES-Schlüssel verschlüsselt in der Datei `wyarf.irs` abgelegt.
+
+. *Lock-File-Prinzip:* +
+Der Einrichtungs-Endpunkt `/wyarf` ist eine One-Time-Setup-Schnittstelle. Er ist streng gesperrt, sobald die Sicherheitsdatei `wyarf.irs` auf der Festplatte existiert.
+
+. *Flüchtiger In-Memory-Betrieb:* +
+Beim Booten der Anwendung liest Spring Security die Datei `wyarf.irs` ein, entschlüsselt die Daten im flüchtigen Arbeitsspeicher (RAM), hasht die Passwörter mit *BCrypt* und übergibt sie an den `InMemoryUserDetailsManager`. Auf der Festplatte verbleibt zu jeder Zeit ausschließlich Ciphertext.
+
+== Der Lebenszyklus im Überblick
+
+
+image::adminlifecycle.svg[Admin Lifecycle Diagramm,width=100%,pdfwidth=100%,align=center]
+
+
+
+== Erstanlage eines Administrators (/wyarf)
+
+Beim allerersten Start des Systems (wenn noch keine `wyarf.irs` existiert) ist der Setup-Endpunkt aktiv.
+
+=== Syntax
+[source,text]
+----
+GET/POST /wyarf/{username}/{password}
+----
+
+=== Parameter
+`{username}`:: Der gewünschte Administrator-Benutzername.
+`{password}`:: Das gewünschte Klartext-Passwort.
+
+=== Beispiel
+[source,bash]
+----
+curl -X POST http://localhost:8080/wyarf/superadmin/Geheim123!
+----
+
+=== Was im Hintergrund geschieht:
+. Das System prüft, ob `wyarf.irs` oder `wyaf.irs` bereits existiert. Falls ja, wird der Zugriff mit `410 GONE` verweigert.
+. `username` und `password` werden mit AES-256-GCM verschlüsselt.
+. Die Zeile `encUser=encPassword` wird in die Datei `wyarf.irs` geschrieben.
+. Das Programm wartet 1 Sekunde (um die HTTP-Antwort noch zuzustellen) und beendet sich automatisch (`System.exit(0)`).
+
+'''
+
+== Systemstart & Entschlüsselung (SecurityConfig)
+
+Nachdem die Anwendung neu gestartet wurde, liest die Methode `userDetailsService` in `SecurityConfig.java` die Datei `wyarf.irs` ein:
+
+[horizontal]
+Wenn `wyarf.irs` existiert:: Alle Einträge werden zeilenweise mit dem Masterkey entschlüsselt, mit `BCryptPasswordEncoder` gehasht und mit der Rolle `ROLE_ADMIN` im Speicher registriert.
+Fallback (Nur vor Erstanlage):: Existiert noch keine Datei, greift ein temporärer Notfall-Admin (`admin` / `admin123`), damit das System zur Initialisierung gestartet werden kann.
+
+'''
+
+== Reguläre Anmeldung an der Web-Oberfläche
+
+Nach dem Neustart kann sich der Administrator über die Standard-Webseite anmelden:
+
+. Öffne im Browser die Startseite: `http://localhost:8080/master`
+. Nutze die rechte Anmeldebox (*Administrator*):
+* *Benutzername:* `{username}` (z. B. `superadmin`)
+* *Passwort:* `{password}` (z. B. `Geheim123!`)
+. Nach erfolgreichem Login erfolgt die automatische Weiterleitung in das Dashboard (`/dashboard`).
+
+Der Administrator erhält Vollzugriff auf alle geschützten Verwaltungsseiten (`/admin/**`):
+
+`+ /admin/dashboard +`:: Kontrollzentrum
+`+ /admin/create-user +`:: Benutzeranlage & DIN-5008-Briefgenerierung
+`+ /admin/users +`:: Benutzerverwaltung, Status-Toggles & Erben-Zuordnung
+`+ /admin/users/edit/{username} +`:: Nachträgliche Datenänderung
+
+'''
+
+== Administratoren auflisten (/wyarfList)
+
+Ermöglicht autorisierten Administratoren das Abfragen aller aktuell registrierten Admin-Konten.
+
+=== Syntax
+[source,text]
+----
+GET/POST /wyarfList/{authUser}/{authPassword}
+----
+
+=== Autorisierung
+Die ersten beiden Pfadvariablen dienen der Authentifizierung. Entsprechen sie keinem gültigen Admin-Konto in `wyarf.irs`, antwortet der Server mit `401 UNAUTHORIZED`.
+
+=== Beispiel
+[source,bash]
+----
+curl http://localhost:8080/wyarfList/superadmin/Geheim123!
+----
+
+=== Antwort (200 OK JSON-Array)
+[source,json]
+----
+[
+  "superadmin"
+]
+----
+
+[NOTE]
+Aus Sicherheitsgründen werden ausschließlich Benutzernamen, niemals Passwörter oder Hashes zurückgegeben.
+
+'''
+
+== Administrator löschen & Reset (/wyarfdelete)
+
+Ermöglicht das gezielte Entfernen eines Admin-Kontos aus der verschlüsselten Datei.
+
+=== Syntax
+[source,text]
+----
+GET/POST/DELETE /wyarfdelete/{authUser}/{authPassword}/{targetUser}
+----
+
+=== Parameter
+`{authUser}`:: Benutzername des autorisierenden Admins.
+`{authPassword}`:: Passwort des autorisierenden Admins.
+`{targetUser}`:: Benutzername des zu löschenden Admins.
+
+=== Szenario A: Löschen bei mehreren vorhandenen Admins
+[source,bash]
+----
+curl -X POST http://localhost:8080/wyarfdelete/superadmin/Geheim123!/backupadmin
+----
+*Verhalten:* `backupadmin` wird aus der Liste entfernt. Die verbleibenden Admins werden mit dem Masterkey neu verschlüsselt und in `wyarf.irs` überschrieben.
+
+=== Szenario B: Löschen des letzten Admins (Factory Reset)
+[source,bash]
+----
+curl -X POST http://localhost:8080/wyarfdelete/superadmin/Geheim123!/superadmin
+----
+*Verhalten:*
+. Das System stellt fest, dass nach dem Löschen kein Admin mehr existiert.
+. Die Datei `wyarf.irs` wird physisch von der Festplatte gelöscht.
+
+[IMPORTANT]
+.Ergebnis
+Der initiale Setup-Endpunkt `/wyarf/{username}/{password}` ist sofort wieder aktiv und kann zur Neuregistrierung genutzt werden.
+
+'''
+
+== 📋 Wichtige Betriebs- & Sicherheitshinweise
+
+[cols="1,3", options="header"]
+|===
+| Aspekt | Sicherheitsrichtlinie
+
+| *Sonderzeichen im Passwort*
+| Werden bei `/wyarf`, `/wyarfList` oder `/wyarfdelete` Passwörter mit Sonderzeichen (wie `#`, `/`, `?`, `&`) übergeben, müssen diese URL-kodiert sein (z. B. `%2F` statt `/` oder `%23` statt `#`).
+
+| *Dateisicherheit*
+| Die Datei `wyarf.irs` kann ohne die Datei `master_private.key` nicht entschlüsselt werden. Ein Diebstahl der Datei alleine gefährdet die Zugangsdaten nicht.
+
+| *Audit-Trail*
+| Alle administrativen Handlungen (User erstellen, bearbeiten, löschen, Status-Toggles) werden im Verzeichnis `audit/` unter striktem Ausschluss schützenswerter Klartext-Daten protokolliert.
+
+| *Automatischer Logout*
+| Bei unberechtigtem Zugriff auf Admin-Pfade (`403 Forbidden`) oder schweren Systemfehlern (`500`) wird die Session sofort zerstört und der Nutzer zur Login-Seite `/master` umgeleitet.
+|===

@@ -134,4 +134,56 @@ public class ServerMasterKeyService {
             throw new RuntimeException("Entschlüsselungsfehler mit Masterkey", e);
         }
     }
+
+
+    // In ServerMasterKeyService.java folgende Methoden für byte[] ergänzen:
+
+    /**
+     * Verschlüsselt beliebige Rohdaten (z. B. PDF-Bytes) mit AES-256-GCM
+     */
+    public byte[] encryptBytes(byte[] plainBytes) {
+        if (plainBytes == null || plainBytes.length == 0) return new byte[0];
+        try {
+            if (this.aesMasterKey == null) initAesKey();
+            byte[] iv = new byte[12];
+            new SecureRandom().nextBytes(iv);
+
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            cipher.init(Cipher.ENCRYPT_MODE, this.aesMasterKey, new GCMParameterSpec(128, iv));
+            byte[] cipherText = cipher.doFinal(plainBytes);
+
+            // Aufbau: [12 Bytes IV] + [Ciphertext + 16 Bytes Auth-Tag]
+            ByteBuffer buffer = ByteBuffer.allocate(iv.length + cipherText.length);
+            buffer.put(iv);
+            buffer.put(cipherText);
+
+            return buffer.array();
+        } catch (Exception e) {
+            throw new RuntimeException("Fehler beim Verschlüsseln der PDF-Bytes", e);
+        }
+    }
+
+    /**
+     * Entschlüsselt beliebige Rohdaten mit AES-256-GCM
+     */
+    public byte[] decryptBytes(byte[] encryptedBytes) {
+        if (encryptedBytes == null || encryptedBytes.length == 0) return new byte[0];
+        try {
+            if (this.aesMasterKey == null) initAesKey();
+            ByteBuffer buffer = ByteBuffer.wrap(encryptedBytes);
+
+            byte[] iv = new byte[12];
+            buffer.get(iv);
+
+            byte[] cipherText = new byte[buffer.remaining()];
+            buffer.get(cipherText);
+
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            cipher.init(Cipher.DECRYPT_MODE, this.aesMasterKey, new GCMParameterSpec(128, iv));
+
+            return cipher.doFinal(cipherText);
+        } catch (Exception e) {
+            throw new RuntimeException("Fehler beim Entschlüsseln der PDF-Bytes", e);
+        }
+    }
 }

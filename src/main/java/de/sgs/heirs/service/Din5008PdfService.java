@@ -1,6 +1,5 @@
 package de.sgs.heirs.service;
 
-
 import de.sgs.heirs.model.SenderInfo;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -13,8 +12,10 @@ import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.springframework.stereotype.Service;
 
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
@@ -24,14 +25,16 @@ import java.time.format.DateTimeFormatter;
 public class Din5008PdfService {
 
     private final SenderInfo senderInfo;
+    private final ServerMasterKeyService masterKeyService;
 
     private static final String OUTPUT_DIR = "generated-letters";
 
     // 1 mm entspricht ca. 2.83465 Punkten in PDFBox (72 DPI)
     private static final float MM_TO_PT = 2.83465f;
 
-    public Din5008PdfService(SenderInfo senderInfo) {
+    public Din5008PdfService(SenderInfo senderInfo, ServerMasterKeyService masterKeyService) {
         this.senderInfo = senderInfo;
+        this.masterKeyService = masterKeyService;
     }
 
     public File createLetterPdf(String username, String fullName,
@@ -45,12 +48,16 @@ public class Din5008PdfService {
 
         // Ausgabe-Ordner anlegen
         Path dirPath = Paths.get(OUTPUT_DIR);
+//        if (!Files.exists(dirPath)) Files.createDirectories(dirPath);
         File targetFile = dirPath.resolve(safeFilename).toFile();
 
         DateTimeFormatter germanDate = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+        byte[] pdfPlainBytes;
 
-        // 2. PDF Dokument erstellen (DIN A4: 595.28 x 841.89 pt)
-        try (PDDocument document = new PDDocument()) {
+        // 2. PDF Dokument erstellen (DIN A4: 595.28 x 841.89 pt) im RAM
+        try (PDDocument document = new PDDocument();
+             ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+
             PDPage page = new PDPage(PDRectangle.A4);
             document.addPage(page);
 
@@ -62,7 +69,6 @@ public class Din5008PdfService {
                 float leftMargin = 25 * MM_TO_PT;                 // DIN 5008: 25mm linker Rand
 
                 // --- 1. RÜCKSENDEANGABE (45 mm von oben, 7 pt klein) ---
-                // 1. Rücksendezeile (45 mm von oben)
                 cs.beginText();
                 cs.setFont(fontRegular, 7);
                 cs.newLineAtOffset(leftMargin, pageHeight - (45 * MM_TO_PT));
@@ -86,14 +92,11 @@ public class Din5008PdfService {
                 cs.showText(recipientLocation);
                 cs.endText();
 
-
                 // --- 3. DATUM (ca. 85 mm von oben, rechtsbündig bei 170 mm) ---
-//                String today = LocalDate.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
                 LocalDate today = LocalDate.now();
                 cs.beginText();
                 cs.setFont(fontRegular, 10);
                 cs.newLineAtOffset(145 * MM_TO_PT, pageHeight - (85 * MM_TO_PT));
-//                cs.showText("Berlin, den " + today);
                 cs.showText(senderInfo.getDatumszeile(today));
                 cs.endText();
 
@@ -101,7 +104,6 @@ public class Din5008PdfService {
                 cs.beginText();
                 cs.setFont(fontBold, 12);
                 cs.newLineAtOffset(leftMargin, pageHeight - (103.5f * MM_TO_PT));
-//                cs.showText("Deine persönlichen Zugangsdaten (Ed25519 QR-Code)");
                 cs.showText("Dein digitaler Zugangsausweis ");
                 cs.endText();
 
@@ -147,24 +149,25 @@ public class Din5008PdfService {
                 cs.endText();
             }
 
-            document.save(targetFile);
+            document.save(baos);
+            pdfPlainBytes = baos.toByteArray();
         }
+
+        // 3. VERSCHLÜSSELUNG: Byte-Array mit AES-256-GCM verschlüsseln und speichern
+        byte[] encryptedBytes = masterKeyService.encryptBytes(pdfPlainBytes);
+        Files.write(targetFile.toPath(), encryptedBytes);
 
         return targetFile;
     }
 
     /**
-     * Lässt im Dateinamen AUSSCHLIESSLICH Buchstaben (A-Z, a-z) und Unterstriche (_) zu.
+     * Lässt im Dateinamen AUSSCHLIESSLICH Buchstaben (A-Z, a-z), Zahlen und Unterstriche (_) zu.
      */
     public String sanitizeFilename(String rawUsername) {
         if (rawUsername == null) return "unbekannt";
-        // Entfernt alles, was kein Buchstabe und kein Unterstrich ist
         String cleaned = rawUsername.replaceAll("[^a-zA-Z_0-9]", "");
         return cleaned.isBlank() ? "benutzer" : cleaned;
     }
-
-
-    // In Din5008PdfService.java folgende Methode ergänzen:
 
     public File createVerwalterLetterPdf(String username, String fullName, String street, String zipCode, String city,
                                          LocalDate validUntil, BufferedImage qrImage) throws IOException {
@@ -173,7 +176,11 @@ public class Din5008PdfService {
 //        if (!Files.exists(dirPath)) Files.createDirectories(dirPath);
         File targetFile = dirPath.resolve(safeFilename).toFile();
 
-        try (PDDocument document = new PDDocument()) {
+        byte[] pdfPlainBytes;
+
+        try (PDDocument document = new PDDocument();
+             ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+
             PDPage page = new PDPage(PDRectangle.A4);
             document.addPage(page);
 
@@ -262,8 +269,15 @@ public class Din5008PdfService {
                 cs.showText("Zentrales Nachlassregister");
                 cs.endText();
             }
-            document.save(targetFile);
+
+            document.save(baos);
+            pdfPlainBytes = baos.toByteArray();
         }
+
+        // 3. VERSCHLÜSSELUNG: Byte-Array mit AES-256-GCM verschlüsseln und speichern
+        byte[] encryptedBytes = masterKeyService.encryptBytes(pdfPlainBytes);
+        Files.write(targetFile.toPath(), encryptedBytes);
+
         return targetFile;
     }
 }
