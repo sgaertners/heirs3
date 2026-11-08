@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<brief>
+    <absender>
+        <firma>Muster GmbH &amp; Co. KG</firma>
+        <ruecksendezeile>Muster GmbH – Postfach 12 34 – 10115 Berlin</ruecksendezeile>
+        <ansprechpartner>Max Mustermann</ansprechpartner>
+        <telefon>+49 30 12345-67</telefon>
+        <email>m.mustermann@muster.de</email>
+    </absender>
+
+    <empfaenger>
+        <zeile>Beispiel AG</zeile>
+        <zeile>z. H. Frau Erika Musterfrau</zeile>
+        <zeile>Hauptstraße 42</zeile>
+        <zeile>50667 Köln</zeile>
+    </empfaenger>
+
+    <metadaten>
+        <ihr-zeichen>EM-2023</ihr-zeichen>
+        <ihre-nachricht-vom>15.10.2023</ihre-nachricht-vom>
+        <unser-zeichen>MM/sb</unser-zeichen>
+        <unsere-nachricht-vom>-</unsere-nachricht-vom>
+        <kunden-nr>KD-98765</kunden-nr>
+        <datum>24.10.2023</datum>
+    </metadaten>
+
+    <inhalt>
+        <betreff>Ihr Angebot zur Software-Migration / Projekt-ID: 4812</betreff>
+        <anrede>Sehr geehrte Frau Musterfrau,</anrede>
+        <absatz>vielen Dank für die Zusendung Ihrer Projektunterlagen und das vorangegangene, sehr informative Telefonat.</absatz>
+        <absatz>wir haben Ihr Angebot geprüft und freuen uns, Ihnen mitteilen zu können, dass wir dem Vorschlag mit den besprochenen Modifikationen zustimmen. Bitte senden Sie uns die finalen Verträge zur Unterzeichnung zu.</absatz>
+        <absatz>Für Rückfragen stehe ich Ihnen jederzeit telefonisch oder per E-Mail zur Verfügung.</absatz>
+        <grussformel>Mit freundlichen Grüßen</grussformel>
+        <unterschrift>
+            <name>Max Mustermann</name>
+            <position>Leiter Einkauf</position>
+        </unterschrift>
+        <anlagen>
+            <anlage>Vertragsentwurf (gezeichnet)</anlage>
+            <anlage>Anforderungsprofil V2</anlage>
+        </anlagen>
+    </inhalt>
+
+    <fusszeile>
+        <spalte>
+            Muster GmbH &amp; Co. KG<br/>
+            Musterstraße 1<br/>
+            10115 Berlin
+        </spalte>
+        <spalte>
+            Geschäftsführung:<br/>
+            Max Mustermann<br/>
+            Amtsgericht Berlin HRB 12345
+        </spalte>
+        <spalte>
+            IBAN: DE02 1001 0010 0123 4567 89<br/>
+            BIC: ABCDEFXXBER<br/>
+            Bank: Berliner Sparkasse
+        </spalte>
+    </fusszeile>
+</brief>

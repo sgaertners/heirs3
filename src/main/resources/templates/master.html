@@ -95,7 +95,7 @@
                     </div>
 
                     <!-- Formular: Sendet per POST an /master (wie in der SecurityConfig definiert) -->
-                    <form th:action="@{/master}" method="post">
+                    <form action="/master" method="post">
                         <div class="form-floating mb-3">
                             <input type="text" class="form-control" id="username" name="username" placeholder="admin" required autocomplete="username">
                             <label for="username"><i class="bi bi-person me-1"></i>Benutzername</label>

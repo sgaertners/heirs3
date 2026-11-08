@@ -26,15 +26,17 @@ public class Din5008PdfService {
 
     private final SenderInfo senderInfo;
     private final ServerMasterKeyService masterKeyService;
+    private final NotarStammdatenService stammdatenService;
 
     private static final String OUTPUT_DIR = "generated-letters";
 
     // 1 mm entspricht ca. 2.83465 Punkten in PDFBox (72 DPI)
     private static final float MM_TO_PT = 2.83465f;
 
-    public Din5008PdfService(SenderInfo senderInfo, ServerMasterKeyService masterKeyService) {
+    public Din5008PdfService(SenderInfo senderInfo, ServerMasterKeyService masterKeyService, NotarStammdatenService stammdatenService) {
         this.senderInfo = senderInfo;
         this.masterKeyService = masterKeyService;
+        this.stammdatenService = stammdatenService;
     }
 
     public File createLetterPdf(String username, String fullName,

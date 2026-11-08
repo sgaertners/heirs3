@@ -1,6 +1,7 @@
 package de.sgs.heirs.controller;
 
 
+import de.sgs.heirs.model.NotarStammdatenConfig;
 import de.sgs.heirs.model.UserAccount;
 import de.sgs.heirs.service.*;
 import jakarta.servlet.http.HttpServletRequest;
@@ -36,16 +37,19 @@ public class AdminController {
     private final Din5008PdfService pdfService;
     private final EncryptedUserCsvService csvService;
     private final AuditService auditService;
+    private final NotarStammdatenService stammdatenService; // Im Konstruktor injizieren
+
 
     public AdminController(ServerMasterKeyService masterKeyService,
                            QrCodeService qrCodeService,
                            Din5008PdfService pdfService,
-                           EncryptedUserCsvService csvService, AuditService auditService) {
+                           EncryptedUserCsvService csvService, AuditService auditService, NotarStammdatenService stammdatenService) {
         this.masterKeyService = masterKeyService;
         this.qrCodeService = qrCodeService;
         this.pdfService = pdfService;
         this.csvService = csvService;
         this.auditService = auditService;
+        this.stammdatenService = stammdatenService;
     }
 
     // --- DASHBOARD ---
@@ -404,6 +408,23 @@ public class AdminController {
             redirectAttributes.addFlashAttribute("error", "Fehler: " + e.getMessage());
         }
         return "redirect:/admin/users";
+    }
+
+
+    @PostMapping("/stammdaten/save")
+    public String saveStammdaten(@ModelAttribute NotarStammdatenConfig config,
+                                 HttpServletRequest request,
+                                 RedirectAttributes redirectAttributes) {
+        try {
+            stammdatenService.saveConfig(config);
+            redirectAttributes.addFlashAttribute("success", "Notar-Stammdaten und Briefvorlagen wurden erfolgreich in XML gespeichert.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Fehler beim Speichern der Stammdaten: " + e.getMessage());
+        }
+
+        // Zurück zur vorherigen Seite leiten
+        String referer = request.getHeader("Referer");
+        return "redirect:" + (referer != null ? referer : "/admin/dashboard");
     }
 
 }
