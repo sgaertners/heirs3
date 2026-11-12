@@ -27,23 +27,23 @@
 
                 <!-- 1. FUSSZEILE (Bankverbindungen etc.) -->
                 <fo:static-content flow-name="xsl-region-after">
-                    <fo:block margin-left="25mm" margin-right="20mm" font-size="7.5pt" color="#555555" border-top="0.5pt solid #cccccc" padding-top="2mm">
-                        <fo:table table-layout="fixed" width="100%">
-                            <fo:table-column column-width="33%"/>
-                            <fo:table-column column-width="33%"/>
-                            <fo:table-column column-width="34%"/>
-                            <fo:table-body>
-                                <fo:table-row>
+                    <fo:block margin-left="25mm" margin-right="20mm" font-size="7.5pt" color="#555555"   border-top="0.5pt solid #cccccc" padding-top="2mm">
+<!--                        <fo:table table-layout="fixed" width="100%">-->
+<!--                            <fo:table-column column-width="33%"/>-->
+<!--                            <fo:table-column column-width="33%"/>-->
+<!--                            <fo:table-column column-width="34%"/>-->
+<!--                            <fo:table-body>-->
+<!--                                <fo:table-row>-->
                                     <xsl:for-each select="fusszeile/spalte">
-                                        <fo:table-cell>
-                                            <fo:block line-height="1.3">
+<!--                                        <fo:table-cell>-->
+                                            <fo:block line-height="1.3" text-align="start">
                                                 <xsl:apply-templates select="node()"/>
                                             </fo:block>
-                                        </fo:table-cell>
+<!--                                        </fo:table-cell>-->
                                     </xsl:for-each>
-                                </fo:table-row>
-                            </fo:table-body>
-                        </fo:table>
+<!--                                </fo:table-row>-->
+<!--                            </fo:table-body>-->
+<!--                        </fo:table>-->
                     </fo:block>
                 </fo:static-content>
 
@@ -175,7 +175,7 @@
                     </fo:block>
 
                     <!-- Anlagenvermerk (optional) -->
-                    <xsl:if select="inhalt/anlagen/anlage">
+                    <xsl:if test="inhalt/anlagen/anlage">
                         <fo:block space-before="10mm" font-size="9pt">
                             <fo:block font-weight="bold" space-after="1mm">Anlagen</fo:block>
                             <xsl:for-each select="inhalt/anlagen/anlage">

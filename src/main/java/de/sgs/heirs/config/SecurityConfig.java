@@ -39,7 +39,7 @@ public class SecurityConfig {
                 .securityContext(context -> context.securityContextRepository(securityContextRepository()))
 
                 // 2. CSRF für Login & QR-Login deaktivieren (verhindert Login-Abbrüche durch Token-Mismatch)
-                .csrf(csrf -> csrf.ignoringRequestMatchers("/api/qr-login", "/login", "/master"))
+                .csrf(csrf -> csrf.ignoringRequestMatchers("/api/qr-login", "/login", "/master", "/brief"))
 
                 // 3. Nur bei echtem 403 (unberechtigter Zugriff auf geschützte URL) abmelden
                 .exceptionHandling(ex -> ex
@@ -58,7 +58,7 @@ public class SecurityConfig {
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/verwalter/**").hasRole("VERWALTER") // <-- NEU: Exklusiver Notar-Pfad
                         .requestMatchers("/master", "/login", "/qr-auth", "/api/qr-login", "/wyarf/", "/wyarfList/**", "/wyarfdelete/**", "/error",
-                                "/css/**", "/js/**", "/webjars/**", "/favicon.ico").permitAll()
+                                "/css/**", "/js/**", "/webjars/**", "/favicon.ico", "/brief").permitAll()
                         .anyRequest().authenticated()
                 )
 
