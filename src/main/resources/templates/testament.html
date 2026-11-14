@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGS HEIRS - Informationen zum Testament</title>
+
+    <!-- WebJars: Bootstrap 5.3 & Icons -->
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/font/bootstrap-icons.css}">
+
+    <style>
+        body {
+            /* Modernes Gradient-Hintergrund */
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-content {
+            flex: 1;
+        }
+
+        /* Styles für den Karten-Container im Hauptbereich */
+        .error-card {
+            position: relative;
+            transition: all 0.3s ease-in-out;
+        }
+
+        .error-card:hover {
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        /* Header-Farbe der Fehler-Kategorien */
+        .chapter-header {
+            position: relative;
+            padding-bottom: 0.5rem;
+        }
+
+        /* Styling für die „Tipp-Boks" und Zitate, damit sie tatsächlich gefüllt sind */
+        .quote-box, .tip-box {
+            background-color: #f1f5f9; /* Leichtes Grau */
+            border-left: 4px solid #3b82f6; /* Blauer Akzent */
+            padding: 1rem;
+            border-radius: 0.25rem;
+            color: #334155;
+        }
+
+        .tip-highlight {
+            background-color: #eff6ff; /* Hellblau */
+            border-left: none;
+        }
+
+        footer {
+            margin-top: auto; /* Schiebt den Footer nach unten */
+        }
+    </style>
+</head>
+<body class="d-flex flex-column">
+
+<!-- 1. HEADER-FRAGMENT EINBINDEN (Vermutlich ein Navbar Template) -->
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<!-- 2. HAUPTINHALT -->
+<main class="container my-5 main-content" th:shard="main">
+
+    <div class="row g-4">
+
+        <!-- 3. HAUPTSPALLE (Links) -->
+        <div class="col-lg-8">
+
+            <article>
+                <p class="lead mb-4">Wer ein Testament verfasst, muss einiges beachten. Ansonsten droht Streit unter den Erben - und der letzte Wille wird womöglich anders umgesetzt. Haben Sie Ihr Testament am Computer geschrieben? Jetzt liegt es in einem Bankschließfach? Oder glauben Sie, gar keines zu brauchen? Wer ein Testament erstellt, kann so einiges falsch machen – wer keins verfasst, aber auch. Welche Fehler Sie rund um Ihren letzten Willen vermeiden sollten.</p>
+
+                <hr class="my-5">
+
+                <!-- Fehler 1 -->
+                <article class="mb-4 error-card shadow-sm">
+                    <h2 class="chapter-header h4"><i class="bi bi-exclamation-circle-fill text-danger"></i> Fehler 1: Ich brauche kein Testament</h2>
+                    <p>Mehrere Gründe sprechen vielleicht doch für eine Testamentserklärung. „Ohne Testament greift die gesetzliche Erbfolge - und die passt häufig nicht zu den persönlichen Vorstellungen", sagt Cornel Potthast von der Arbeitsgemeinschaft Erbrecht des Deutschen Anwaltvereins. Bei dieser Entscheidung würde etwa ein unverheirateter Partner ohne Testament leer ausgehen, warnt der Fachanwalt für Erbrecht. Und bei kinderlosen Ehepaaren müsste sich der überlebende Partner das Erbe mit den Eltern oder Geschwistern des Verstorbenen teilen. Schon kleine Abweichungen von der gesetzlichen Erbfolge erfordern daher ein testamentarische Regelung.</p>
+                </article>
+
+                <!-- Fehler 2 -->
+                <article class="mb-4 error-card shadow-sm">
+                    <h2 class="chapter-header h4"><i class="bi bi-exclamation-circle-fill text-danger"></i> Fehler 2: Ich schreibe mein Testament am PC</h2>
+                    <p>Einer am Computer verfassten und Ausdruck eines Testaments grundsätzlich unwirksam. „Für ein rechtsgültiges Testament gibt es nur zwei Möglichkeiten", erklärt Cornel Potthast:</p>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item"><i class="bi bi-check-circle text-primary"></i> Sie schreiben es komplett hand-schriftlich, mit Datum, Ort und Unterschrift.</li>
+                        <li class="list-group-item"><i class="bi bi-check-circle text-primary"></i> Lassen Sie es von einem Notar beurkunden.</li>
+                    </ul>
+                </article>
+
+                <!-- Fehler 3 -->
+                <article class="mb-4 error-card shadow-sm">
+                    <h2 class="chapter-header h4"><i class="bi bi-exclamation-circle-fill text-danger"></i> Fehler 3: Ist doch klar, wer gemeint ist</h2>
+                    <p>Eine Testament erklärung ist kein Abschiedsbrief. Unscharfe Formulierungen führen leicht zu Streit. Nennen Sie darum konkrete Namen und wählen Sie eine klare Sprache, die keinen Spielraum für Interpretationen lässt, empfiehlt Potthast.</p>
+                </article>
+
+                <!-- Fehler 4 -->
+                <article class="mb-4 error-card shadow-sm">
+                    <h2 class="chapter-header h4"><i class="bi bi-exclamation-circle-fill text-danger"></i> Fehler 4: Ich vermache dieses und vererbe jenes</h2>
+                    <p>Versuchsweise bedeuten „vererben" und „vermachen" dasselbe – juristisch nicht. Ein Erbe tritt umfassend in die Rechtsnachfolge des Verstorbenen ein, erklärt Potthast.</p>
+                    <h5 class="text-muted mt-3">Wichtige Begriffsunterscheidung:</h5>
+                    <p class="mb-2"><div class="quote-box">"Der Erbe übernimmt Vermögen, Schulden und Verträge und regelt den Nachlass."</div></p>
+                    <p><div class="quote-box bg-transparent">Ein Vermächtnis hingegen ist eine Einzelzuwendung, etwa ein Geldbetrag, eine Immobilie oder ein Auto.</div></p>
+                </article>
+
+                <!-- Fehler 5 (Korrektiert) -->
+                <article class="mb-4 error-card shadow-sm">
+                    <h2 class="chapter-header h4"><i class="bi bi-exclamation-circle-fill text-danger"></i> Fehler 5: Ein Testament schreibt man einmal im Leben</h2>
+                    <p>Wenn sich Familienverhältnisse oder Vermögen ändern, passt das alte Testament oft nicht mehr. Ein Testament sollte daher regelmäßig überprüft werden, rät Potthast.</p>
+
+                    <!-- Hier wurde die Klasse „tip-box" angewendet, damit der Text im inneren Container angezeigt wird -->
+                    <div class="tip-box mb-3"> <!-- Klasse „tip-box" ist im Header definiert -->
+                        <i class="bi bi-lightbulb-fill me-2"></i><strong>Sein Tipp:</strong> „Prüfen Sie Ihr Testament wie Ihre Finanzen regelmäßig, jedenfalls nach größeren Ereignissen wie der Geburt eines Kindes oder wesentlichen Änderungen Ihrer finanziellen Verhältnisse."
+                    </div>
+                </article>
+
+                <!-- Fehler 6 -->
+                <article class="mb-4 error-card shadow-sm">
+                    <h2 class="chapter-header h4"><i class="bi bi-exclamation-circle-fill text-danger"></i> Fehler 6: Ich habe mehrere Fassungen geschrieben</h2>
+                    <p>Aktualisierungen des Testaments können auch für Verwirrung sorgen: Gibt es mehrere Fassungen, ist oft unklar, welche gilt.</p>
+                    <div class="quote-box mb-2">"Jedes neue Testament sollte ein Datum tragen und den Satz: ‚Hiermit widerrufe ich alle vorherigen Testamente', empfiehlt Claus-Henrik Horn vom Ausschuss für Familien- und Erbrecht der Bundesrechtsanwaltskammer. Fehlt dieser Hinweis, droht Streit."</div>
+                    <p>Anwälte und Gerichte müssen dann klären, welche Fassung gilt und ob frühere Versionen ganz oder teilweise aufgehoben sind, sagt der Fachanwalt für Erbrecht.</p>
+                </article>
+
+                <!-- Fehler 7 -->
+                <article class="mb-4 error-card shadow-sm">
+                    <h2 class="chapter-header h4"><i class="bi bi-exclamation-circle-fill text-danger"></i> Fehler 7: Ich habe ein Standard-Testament</h2>
+                    <p><strong>Das „Berliner Testament" – Haken im Alltag:</strong> Ehepaare mit Kindern wählen dies oft. Sie setzen sich gegenseitig als Alleinerben ein, die Kinder erben nach dem Tod beider Eltern das Gesamtvermögen. Der überlebende Partner ist damit aber daran gebunden.</p>
+                    <div class="alert alert-light">
+                        Ziel ist es, durch eine Änderungsklausel im Berliner Testament dem überlebenden Partner Spielraum zu geben.
+                    </div>
+                </article>
+
+                <!-- Fehler 8 -->
+                <article class="mb-4 error-card shadow-sm">
+                    <h2 class="chapter-header h4"><i class="bi bi-exclamation-triangle-fill text-warning"></i> Fehler 8: Den habe ich enterbt, der bekommt nichts</h2>
+                    <p>Naher Angehörige, die im Testament enterbt wurden, haben dennoch Anspruch auf einen Pflichtteil. Dessen Anteil müssen die Erben dann aus ihrem Erbe zahlen.</p>
+                    <p>Auch in Fällen mit nichtehelichen Kindern muss darüber gedenken, da ein Berliner Testament hier zu einem hohen Pflichtteilan Anspruch führen kann. Vermeidungslösung: Eine testamentarische Vor- und Nacherbfolge eingerichtet lassen. Der überlebende Ehepartner wird Vorerbe und behält sein eigenes Vermögen getrennt. Erst wenn er stirbt, greift eine Weiterveranlassung zugunsten des nichtehelichen Kindes – dieses bekommt dann nur den Anteil über den Pflichtteil seines leiblichen Elternteils.</p>
+                </article>
+
+            </article>
+
+            <!-- Fehler 9 -->
+            <div class="error-card shadow-sm mb-4 border-warning">
+                <h2 class="chapter-header h4 text-warning"><i class="bi bi-lock-fill"></i> Fehler 9: Mein Testament ist gut versteckt</h2>
+                <p>Kleinem Testament nützt, wenn es niemand findet - „oder wenn es jemand verschwinden lässt", warnt Claus-Henrik Horn.</p>
+                <div class="quote-box bg-light text-dark">Deshalb empfiehlt er, das Testament beim Amtsgericht in Verwahrung zu geben. Das kostet einmalig weniger als 100 Euro. Stirbt der Verfasser, wird das Testament automatisch eröffnet.</div>
+                <p><strong>Hinweis zur Alternative (Amtsgericht):</strong> Von Bankschließfächern rät Horn hingegen ab: Um an das Testament zu kommen, müssen sich die Erben legitimieren.</p>
+                <div class="quote-box bg-light text-dark mt-2">"Dann müssen die Erben das erst einmal gerichtlich klären lassen", warnt der Rechtsanwalt.</div>
+
+            </div>
+
+        </div>
+        <!-- End Hauptspalte -->
+
+
+        <!-- 1. SIDEBAR (Rechts - Flexibles Grid-Layout) -->
+        <div class="col-lg-4">
+
+            <!-- Info Box -->
+            <div class="card shadow-sm my-3 h-100">
+                <div class="card-header bg-primary text-white py-3 fw-bold">Sicherheitshinweise</div>
+                <div class="card-body bg-light p-4">
+                    <p class="text-muted small mb-3"><i class="bi bi-shield-check-fill me-2"></i>Die Informationen in diesem Artikel dienen der allgemeinen Aufklärung. Sie ersetzen keine anwaltliche Beratung.</p>
+                    <div class="alert alert-info small">
+                        <i class="me-2"></i>Konsultieren Sie bei konkreter Planung unbedingt einen Fachanwalt für Erbrecht.
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+</main>
+
+
+<!-- Footer -->
+<footer class="bg-white border-top mt-auto py-4 small">
+    <div class="container text-center text-muted">
+        &copy; 2026 SGS HEIRS • Informationen zum Vererben und Vermachen
+    </div>
+</footer>
+
+<!-- Bootstrap JS via WebJar -->
+<script th:src="@{/webjars/bootstrap/js/bootstrap.bundle.min.js}" defer></script>
+
+</body>
+</html>

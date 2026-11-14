@@ -4,8 +4,7 @@ import de.sgs.heirs.service.AuditService;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.web.servlet.error.ErrorController;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -13,10 +12,9 @@ import org.springframework.security.web.authentication.logout.SecurityContextLog
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+@Slf4j
 @Controller
 public class GlobalErrorController implements ErrorController {
-
-    private static final Logger log = LoggerFactory.getLogger(GlobalErrorController.class);
 
     private final SecurityContextLogoutHandler logoutHandler = new SecurityContextLogoutHandler();
     private final AuditService auditService;
