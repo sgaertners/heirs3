@@ -58,7 +58,7 @@ public class SecurityConfig {
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/verwalter/**").hasRole("VERWALTER") // <-- NEU: Exklusiver Notar-Pfad
                         .requestMatchers("/master", "/login", "/qr-auth", "/api/qr-login", "/wyarf/", "/wyarfList/**", "/wyarfdelete/**", "/error",
-                                "/css/**", "/js/**", "/webjars/**", "/favicon.ico", "/brief", "/testament").permitAll()
+                                "/img/**", "/css/**", "/js/**", "/webjars/**", "/favicon.ico", "/brief", "/testament").permitAll()
                         .anyRequest().authenticated()
                 )
 

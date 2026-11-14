@@ -25,8 +25,10 @@ public class GlobalErrorController implements ErrorController {
 
     @RequestMapping("/error")
     public String handleError(HttpServletRequest request, HttpServletResponse response) {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
         log.error("Error page requested: status={}, user={}", request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE),
-                SecurityContextHolder.getContext().getAuthentication().getName());
+                username);
         Object status = request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
         int statusCode = (status != null) ? Integer.parseInt(status.toString()) : 500;
 
